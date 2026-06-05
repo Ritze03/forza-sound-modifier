@@ -1,0 +1,8 @@
+# Ignore all
+*
+
+# Files to keep
+!sound_modifier_gui.py
+
+# Keep gitignore
+!.gitignore
