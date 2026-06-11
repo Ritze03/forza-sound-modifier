@@ -235,7 +235,12 @@ ENGINE_BANK_OPTIONS = [
 class ConfigManager:
     """Manages reading and writing app settings/overrides to ~/.local/share/ForzaHorizon6SoundMod/config.json"""
     def __init__(self):
-        self.config_dir = os.path.join(os.path.expanduser("~"), ".local", "share", "ForzaHorizon6SoundMod")
+        if os.name == "nt":
+            base_config_dir = os.path.join(os.environ.get("APPDATA", os.path.expanduser("~")), "ForzaHorizon6SoundMod")
+        else:
+            base_config_dir = os.path.join(os.path.expanduser("~"), ".local", "share", "ForzaHorizon6SoundMod")
+
+        self.config_dir = base_config_dir
         os.makedirs(self.config_dir, exist_ok=True)
         self.config_file = os.path.join(self.config_dir, "config.json")
         self.profiles_dir = os.path.join(self.config_dir, "profiles")
