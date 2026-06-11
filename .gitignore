@@ -3,6 +3,8 @@
 
 # Files to keep
 !sound_modifier_gui.py
+!pyproject.toml
+!README.md
 
 # Keep gitignore
 !.gitignore
