@@ -1,0 +1,16 @@
+{
+  "car_overrides": {},
+  "global_overrides": {},
+  "synth_overrides": {
+    "[Global Engine]":       { "Channel": { "MasterVolume": "2" } },
+    "[Global Exhaust]":      { "Channel": { "MasterVolume": "2" } },
+    "[Global Intake]":       { "Channel": { "MasterVolume": "2" } },
+    "[Global Transmission]": { "Channel": { "MasterVolume": "0.01" } },
+    "[Global Turbo]":        { "Channel": { "MasterVolume": "2" } },
+    "[Global Supercharger]": { "Channel": { "MasterVolume": "2" } }
+  },
+  "misc_overrides": { "blur_rim_max_rpm": "350000.0" },
+  "reverb_overrides": {},
+  "description": "Engine/Intake/Exhaust: 200%\nTurbo/Supercharger: 200%\nTransmission: 1%\nBackfire: 100%\n\nNo Rim Blur",
+  "created": "2026-06-05T08:20:02"
+}

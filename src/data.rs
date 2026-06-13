@@ -97,6 +97,12 @@ pub const GLOBAL_CATEGORIES: &[(&str, &str, &str)] = &[
     ("[Global Supercharger]", "*_CSC.xml, *_DSC.xml","Sets Channel volume/RPM for ALL supercharger synth files."),
 ];
 
+pub const BUNDLED_PROFILES: &[(&str, &str)] = &[
+    ("Backfire-NoTransmission",    include_str!("../profiles/Backfire-NoTransmission.json")),
+    ("300Backfire-NoTransmission", include_str!("../profiles/300Backfire-NoTransmission.json")),
+    ("LoudCars",                   include_str!("../profiles/LoudCars.json")),
+];
+
 pub fn options_for_key(key: &str) -> &'static [&'static str] {
     if key.contains("Transmission") { TRANSMISSION_PROFILES }
     else if key.contains("Turbo") { TURBO_PROFILES }

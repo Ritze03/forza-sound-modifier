@@ -1,5 +1,7 @@
 use crate::app::{App, Dialog, ConfirmAction, TextInputAction, COL_GRAY, COL_GREEN};
 
+const COL_BUILT_IN: egui::Color32 = egui::Color32::from_rgb(100, 180, 220);
+
 pub fn render(app: &mut App, ui: &mut egui::Ui, _ctx: &egui::Context) {
     // Header banner
     egui::Frame::none()
@@ -19,19 +21,43 @@ pub fn render(app: &mut App, ui: &mut egui::Ui, _ctx: &egui::Context) {
             });
         });
 
-    ui.add_space(0.0);
-
     // Main body: left list + right editor
     egui::SidePanel::left("profiles_list_panel")
         .min_width(200.0)
         .max_width(300.0)
         .resizable(true)
         .show_inside(ui, |ui| {
-            ui.add_space(8.0);
-            ui.colored_label(COL_GRAY, "SAVED PROFILES");
-            ui.add_space(4.0);
-
             egui::ScrollArea::vertical().show(ui, |ui| {
+                // ── Built-in profiles ─────────────────────────────────────────
+                ui.add_space(8.0);
+                ui.colored_label(COL_BUILT_IN, "BUILT-IN PROFILES");
+                ui.add_space(4.0);
+
+                let bundled_names: Vec<String> = app.bundled_profiles.iter()
+                    .map(|(n, _)| n.clone())
+                    .collect();
+                for name in bundled_names {
+                    let sel = app.selected_bundled.as_deref() == Some(&name);
+                    let label = egui::RichText::new(format!("◆  {}", name)).color(COL_BUILT_IN);
+                    if ui.selectable_label(sel, label).clicked() {
+                        app.selected_bundled = Some(name.clone());
+                        app.selected_profile = None;
+                        let desc = app.bundled_profiles.iter()
+                            .find(|(n, _)| n == &name)
+                            .map(|(_, p)| p.description.clone())
+                            .unwrap_or_default();
+                        app.profile_desc_buf = desc;
+                    }
+                }
+
+                ui.add_space(8.0);
+                ui.separator();
+
+                // ── User profiles ─────────────────────────────────────────────
+                ui.add_space(4.0);
+                ui.colored_label(COL_GRAY, "YOUR PROFILES");
+                ui.add_space(4.0);
+
                 let active = app.config.data.active_profile.clone();
                 let mut names: Vec<String> = app.config.profiles.keys().cloned().collect();
                 names.sort();
@@ -46,8 +72,8 @@ pub fn render(app: &mut App, ui: &mut egui::Ui, _ctx: &egui::Context) {
                     if ui.selectable_label(sel, label).clicked() {
                         if app.selected_profile.as_deref() != Some(&name) {
                             app.selected_profile = Some(name.clone());
-                            let profile = app.config.profiles.get(&name).cloned();
-                            if let Some(p) = profile {
+                            app.selected_bundled = None;
+                            if let Some(p) = app.config.profiles.get(&name) {
                                 app.profile_name_buf = name.clone();
                                 app.profile_desc_buf = p.description.clone();
                             }
@@ -68,46 +94,139 @@ pub fn render(app: &mut App, ui: &mut egui::Ui, _ctx: &egui::Context) {
                         action: TextInputAction::NewProfile,
                     });
                 }
-                if ui.button("⧉ Duplicate").clicked() {
-                    if let Some(ref name) = app.selected_profile.clone() {
-                        let src = name.clone();
-                        let default_name = format!("{} (copy)", src);
-                        app.dialog = Some(Dialog::TextInput {
-                            title: "Duplicate Profile".into(),
-                            prompt: "Name for the duplicate:".into(),
-                            value: default_name,
-                            action: TextInputAction::DuplicateProfile(src),
-                        });
+                let can_dup = app.selected_profile.is_some();
+                ui.add_enabled_ui(can_dup, |ui| {
+                    if ui.button("⧉ Duplicate").clicked() {
+                        if let Some(ref name) = app.selected_profile.clone() {
+                            let src = name.clone();
+                            let default_name = format!("{} (copy)", src);
+                            app.dialog = Some(Dialog::TextInput {
+                                title: "Duplicate Profile".into(),
+                                prompt: "Name for the duplicate:".into(),
+                                value: default_name,
+                                action: TextInputAction::DuplicateProfile(src),
+                            });
+                        }
                     }
-                }
+                });
             });
         });
 
     egui::CentralPanel::default().show_inside(ui, |ui| {
-        match app.selected_profile.clone() {
-            None => {
-                ui.centered_and_justified(|ui| {
-                    ui.colored_label(egui::Color32::from_rgb(80, 96, 170),
-                        "Select a profile from the list, or create a new one.");
-                });
-            }
-            Some(ref name) => {
-                if !app.config.profiles.contains_key(name) {
-                    app.selected_profile = None;
-                    return;
+        if let Some(ref name) = app.selected_bundled.clone() {
+            render_bundled_editor(app, ui, name.clone());
+        } else {
+            match app.selected_profile.clone() {
+                None => {
+                    ui.centered_and_justified(|ui| {
+                        ui.colored_label(egui::Color32::from_rgb(80, 96, 170),
+                            "Select a profile from the list, or create a new one.");
+                    });
                 }
-                render_profile_editor(app, ui, name.clone());
+                Some(ref name) => {
+                    if !app.config.profiles.contains_key(name) {
+                        app.selected_profile = None;
+                        return;
+                    }
+                    render_profile_editor(app, ui, name.clone());
+                }
             }
         }
     });
-
 }
+
+// ── Built-in profile view (load/apply only) ───────────────────────────────────
+
+fn render_bundled_editor(app: &mut App, ui: &mut egui::Ui, name: String) {
+    let profile = app.bundled_profiles.iter()
+        .find(|(n, _)| n == &name)
+        .map(|(_, p)| p.clone());
+    let Some(profile) = profile else { return; };
+
+    egui::ScrollArea::vertical().show(ui, |ui| {
+        ui.add_space(8.0);
+
+        // Name + badge
+        ui.horizontal(|ui| {
+            ui.heading(&name);
+            ui.add_space(6.0);
+            egui::Frame::none()
+                .fill(egui::Color32::from_rgb(30, 60, 80))
+                .inner_margin(egui::Margin::symmetric(6.0, 2.0))
+                .rounding(egui::Rounding::same(4.0))
+                .show(ui, |ui| {
+                    ui.colored_label(COL_BUILT_IN, "BUILT-IN");
+                });
+        });
+
+        // Description
+        if !profile.description.is_empty() {
+            ui.add_space(6.0);
+            egui::Frame::group(ui.style()).show(ui, |ui| {
+                ui.colored_label(COL_GRAY, &profile.description);
+            });
+        }
+
+        // Stats
+        ui.add_space(6.0);
+        let n_synth = profile.synth_overrides.len();
+        let n_misc  = profile.misc_overrides.len();
+        let n_global = profile.global_overrides.len();
+        ui.colored_label(COL_GRAY,
+            format!("Created: {}   ·   Class: {}  ·  Global: {}  ·  Misc: {}",
+                profile.created, n_synth, n_global, n_misc));
+
+        ui.separator();
+        ui.add_space(4.0);
+
+        egui::Frame::group(ui.style()).show(ui, |ui| {
+            ui.label(egui::RichText::new("Profile Actions").strong());
+            ui.add_space(4.0);
+
+            // Load into editor
+            if ui.add(egui::Button::new("📂  Load Profile into Editor")
+                .fill(egui::Color32::from_rgb(42, 46, 30))
+                .min_size(egui::vec2(300.0, 0.0)))
+                .clicked()
+            {
+                app.dialog = Some(Dialog::Confirm {
+                    title: "Load Built-in Profile".into(),
+                    message: format!("Load '{}'? This will replace all current settings in the editor.", name),
+                    action: ConfirmAction::LoadBundled(name.clone()),
+                });
+            }
+
+            ui.add_space(2.0);
+
+            // Apply to game
+            if ui.add(egui::Button::new("▶  Apply Profile to Game")
+                .fill(egui::Color32::from_rgb(26, 58, 26))
+                .min_size(egui::vec2(300.0, 0.0)))
+                .clicked()
+            {
+                if !app.backup_exists {
+                    app.dialog = Some(Dialog::Info {
+                        title: "No Backup".into(),
+                        message: "Please create a backup on the Setup tab first.".into(),
+                    });
+                } else {
+                    app.dialog = Some(Dialog::Confirm {
+                        title: "Apply Built-in Profile".into(),
+                        message: format!("Apply '{}' to game files?", name),
+                        action: ConfirmAction::ApplyBundled(name.clone()),
+                    });
+                }
+            }
+        });
+    });
+}
+
+// ── User profile editor ───────────────────────────────────────────────────────
 
 fn render_profile_editor(app: &mut App, ui: &mut egui::Ui, name: String) {
     egui::ScrollArea::vertical().show(ui, |ui| {
         ui.add_space(8.0);
 
-        // Name row
         egui::Frame::group(ui.style()).show(ui, |ui| {
             ui.label(egui::RichText::new("Profile Name").strong());
             ui.horizontal(|ui| {
@@ -125,7 +244,6 @@ fn render_profile_editor(app: &mut App, ui: &mut egui::Ui, name: String) {
 
         ui.add_space(8.0);
 
-        // Description
         egui::Frame::group(ui.style()).show(ui, |ui| {
             ui.label(egui::RichText::new("Description (optional)").strong());
             ui.add(egui::TextEdit::multiline(&mut app.profile_desc_buf)
@@ -137,8 +255,7 @@ fn render_profile_editor(app: &mut App, ui: &mut egui::Ui, name: String) {
                 if let Some(p) = app.config.profiles.get_mut(&name) {
                     p.description = desc;
                 }
-                let profile = app.config.profiles.get(&name).cloned();
-                if let Some(p) = profile {
+                if let Some(p) = app.config.profiles.get(&name).cloned() {
                     app.config.save_profile(&name, &p);
                 }
             }
@@ -146,12 +263,11 @@ fn render_profile_editor(app: &mut App, ui: &mut egui::Ui, name: String) {
 
         ui.add_space(8.0);
 
-        // Stats
         if let Some(p) = app.config.profiles.get(&name) {
-            let n_car = p.car_overrides.values().filter(|v| !v.is_empty()).count();
+            let n_car    = p.car_overrides.values().filter(|v| !v.is_empty()).count();
             let n_global = p.global_overrides.len();
-            let n_synth = p.synth_overrides.len();
-            let n_misc = p.misc_overrides.len();
+            let n_synth  = p.synth_overrides.len();
+            let n_misc   = p.misc_overrides.len();
             let is_active = name == app.config.data.active_profile;
             let active_tag = if is_active { "  ✓ ACTIVE" } else { "" };
             ui.colored_label(COL_GRAY,
@@ -162,12 +278,10 @@ fn render_profile_editor(app: &mut App, ui: &mut egui::Ui, name: String) {
         ui.separator();
         ui.add_space(4.0);
 
-        // Action buttons
         egui::Frame::group(ui.style()).show(ui, |ui| {
             ui.label(egui::RichText::new("Profile Actions").strong());
             ui.add_space(4.0);
 
-            // Save current settings to profile
             if ui.add(egui::Button::new("💾  Save Current Settings to This Profile")
                 .fill(egui::Color32::from_rgb(30, 46, 74))
                 .min_size(egui::vec2(300.0, 0.0)))
@@ -182,7 +296,6 @@ fn render_profile_editor(app: &mut App, ui: &mut egui::Ui, name: String) {
 
             ui.add_space(2.0);
 
-            // Load profile into editor
             if ui.add(egui::Button::new("📂  Load Profile into Editor")
                 .fill(egui::Color32::from_rgb(42, 46, 30))
                 .min_size(egui::vec2(300.0, 0.0)))
@@ -197,7 +310,6 @@ fn render_profile_editor(app: &mut App, ui: &mut egui::Ui, name: String) {
 
             ui.add_space(2.0);
 
-            // Apply profile to game
             if ui.add(egui::Button::new("▶  Apply Profile to Game")
                 .fill(egui::Color32::from_rgb(26, 58, 26))
                 .min_size(egui::vec2(300.0, 0.0)))
@@ -219,7 +331,6 @@ fn render_profile_editor(app: &mut App, ui: &mut egui::Ui, name: String) {
 
             ui.add_space(2.0);
 
-            // Delete
             let can_delete = app.config.profiles.len() > 1;
             ui.add_enabled_ui(can_delete, |ui| {
                 if ui.add(egui::Button::new("🗑  Delete Profile")
@@ -248,8 +359,7 @@ fn do_rename_profile(app: &mut App, old_name: &str, new_name: &str) {
         });
         return;
     }
-    let profile = app.config.profiles.get(old_name).cloned();
-    if let Some(p) = profile {
+    if let Some(p) = app.config.profiles.get(old_name).cloned() {
         app.config.save_profile(new_name, &p);
         app.config.delete_profile(old_name);
         if app.config.data.active_profile == old_name {
@@ -260,4 +370,3 @@ fn do_rename_profile(app: &mut App, old_name: &str, new_name: &str) {
         app.profile_name_buf = new_name.to_string();
     }
 }
-

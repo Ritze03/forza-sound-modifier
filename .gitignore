@@ -4,20 +4,20 @@
 # Keep gitignore itself
 !.gitignore
 
-# Python app
-!sound_modifier_gui.py
-!pyproject.toml
-!README.md
-
 # Rust app
 !Cargo.toml
 !Cargo.lock
 !src/
 !src/**
 
+# Bundled profiles
+!profiles/
+!profiles/**
+
 # Docs
+!README.md
 !reverb_documentation.md
 !sound_modification_guide.md
 
-# Build output (ignore)
+# Build output
 target/

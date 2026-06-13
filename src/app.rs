@@ -68,6 +68,8 @@ pub enum ConfirmAction {
     LoadProfile(String),
     SaveToProfile(String),
     ApplyProfile(String),
+    LoadBundled(String),
+    ApplyBundled(String),
 }
 
 pub enum TextInputAction {
@@ -122,8 +124,10 @@ pub struct App {
 
     // Profiles tab
     pub selected_profile: Option<String>,
+    pub selected_bundled: Option<String>,
     pub profile_name_buf: String,
     pub profile_desc_buf: String,
+    pub bundled_profiles: Vec<(String, crate::config::ProfileData)>,
 
     // Dialog
     pub dialog: Option<Dialog>,
@@ -159,8 +163,10 @@ impl App {
             misc_bfmax_val: "350.0".into(),
             reverb_fields: build_reverb_fields(&config),
             selected_profile: None,
+            selected_bundled: None,
             profile_name_buf: String::new(),
             profile_desc_buf: String::new(),
+            bundled_profiles: load_bundled_profiles(),
             dialog: None,
             car_list: Vec::new(),
             synth_list: Vec::new(),
@@ -714,6 +720,40 @@ fn dispatch_confirm(app: &mut App, action: ConfirmAction) {
                 }
             }
         }
+        ConfirmAction::LoadBundled(name) => {
+            let snap = app.bundled_profiles.iter()
+                .find(|(n, _)| n == &name)
+                .map(|(_, p)| p.clone());
+            if let Some(snap) = snap {
+                app.config.apply_snapshot(&snap);
+                app.reload_all_ui_from_config();
+                app.status_msg = format!("Built-in profile '{}' loaded into editor.", name);
+            }
+        }
+        ConfirmAction::ApplyBundled(name) => {
+            let snap = app.bundled_profiles.iter()
+                .find(|(n, _)| n == &name)
+                .map(|(_, p)| p.clone());
+            if let Some(snap) = snap {
+                app.config.apply_snapshot(&snap);
+                app.reload_all_ui_from_config();
+            }
+            match app.apply_changes() {
+                Ok(()) => {
+                    app.status_msg = format!("Built-in profile '{}' applied.", name);
+                    app.dialog = Some(Dialog::Info {
+                        title: "Success".into(),
+                        message: format!("Profile '{}' applied to game files!", name),
+                    });
+                }
+                Err(e) => {
+                    app.dialog = Some(Dialog::Info {
+                        title: "Error".into(),
+                        message: format!("Failed to apply profile:\n{}", e),
+                    });
+                }
+            }
+        }
     }
 }
 
@@ -761,6 +801,15 @@ fn dispatch_text(app: &mut App, action: TextInputAction, value: String) {
             app.status_msg = format!("Profile '{}' duplicated from '{}'.", final_name, source);
         }
     }
+}
+
+// ── Bundled profile loader ────────────────────────────────────────────────────
+
+fn load_bundled_profiles() -> Vec<(String, crate::config::ProfileData)> {
+    crate::data::BUNDLED_PROFILES.iter().filter_map(|(name, json)| {
+        serde_json::from_str::<crate::config::ProfileData>(json).ok()
+            .map(|p| (name.to_string(), p))
+    }).collect()
 }
 
 // ── Helpers to build initial field lists ──────────────────────────────────────
