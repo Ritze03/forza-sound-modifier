@@ -7,40 +7,20 @@ import shutil
 import datetime
 import xml.etree.ElementTree as ET
 
-# Ensure PySide6 or PyQt6 is available
 try:
-    from PySide6.QtCore import Qt, QSize, QLocale
-    from PySide6.QtGui import QFont, QDoubleValidator
-    from PySide6.QtWidgets import (
+    from PyQt6.QtCore import Qt, QSize, QLocale
+    from PyQt6.QtGui import QFont, QDoubleValidator
+    from PyQt6.QtWidgets import (
         QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
         QTabWidget, QLabel, QLineEdit, QPushButton, QFileDialog, QGroupBox,
         QScrollArea, QFormLayout, QComboBox, QCheckBox, QListWidget, QSplitter,
         QMessageBox, QDoubleSpinBox, QProgressBar, QStatusBar, QGridLayout,
         QFrame, QSizePolicy, QTextEdit, QInputDialog
     )
-    PYSIDE = True
 except ImportError:
-    try:
-        from PyQt6.QtCore import Qt, QSize, QLocale
-        from PyQt6.QtGui import QFont, QDoubleValidator
-        from PyQt6.QtWidgets import (
-            QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
-            QTabWidget, QLabel, QLineEdit, QPushButton, QFileDialog, QGroupBox,
-            QScrollArea, QFormLayout, QComboBox, QCheckBox, QListWidget, QSplitter,
-            QMessageBox, QDoubleSpinBox, QProgressBar, QStatusBar, QGridLayout,
-            QFrame, QSizePolicy, QTextEdit, QInputDialog
-        )
-        PYSIDE = False
-    except ImportError:
-        print("Neither PySide6 nor PyQt6 is installed. Please install one of them.", file=sys.stderr)
-        sys.exit(1)
+    print("PyQt6 is not installed. Please install it with: pip install PyQt6", file=sys.stderr)
+    sys.exit(1)
 
-# Helper to adapt Qt properties between PySide6 and PyQt6
-def get_align_left():
-    return Qt.AlignmentFlag.AlignLeft if hasattr(Qt, "AlignmentFlag") else Qt.AlignLeft
-
-def get_align_center():
-    return Qt.AlignmentFlag.AlignCenter if hasattr(Qt, "AlignmentFlag") else Qt.AlignTop # AlignCenter fallback
 
 # Style sheet for dark mode functional layout
 DARK_STYLE = """
@@ -981,7 +961,7 @@ class MainWindow(QMainWindow):
     def build_global_config_widget(self):
         self.scroll_global_config = QScrollArea()
         self.scroll_global_config.setWidgetResizable(True)
-        self.scroll_global_config.setFrameShape(QFrame.Shape.NoFrame if hasattr(QFrame, "Shape") else QFrame.NoFrame)
+        self.scroll_global_config.setFrameShape(QFrame.Shape.NoFrame)
         self.scroll_global_config.setVisible(False)
         
         content = QWidget()
@@ -1134,7 +1114,7 @@ class MainWindow(QMainWindow):
         tab = QWidget()
         layout = QVBoxLayout(tab)
         
-        splitter = QSplitter(Qt.Orientation.Horizontal if hasattr(Qt, "Orientation") else Qt.Horizontal)
+        splitter = QSplitter(Qt.Orientation.Horizontal)
         layout.addWidget(splitter)
         
         # Left Side Pane: List & Search
@@ -1160,7 +1140,7 @@ class MainWindow(QMainWindow):
         
         # Empty/Welcome View
         self.lbl_per_car_welcome = QLabel("Select a vehicle or [Global Overrides] from the list to modify sound overrides.")
-        self.lbl_per_car_welcome.setAlignment(get_align_center())
+        self.lbl_per_car_welcome.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.lbl_per_car_welcome.setStyleSheet("color: #a0a0aa; font-size: 11pt;")
         self.right_layout.addWidget(self.lbl_per_car_welcome)
         
@@ -1350,7 +1330,7 @@ class MainWindow(QMainWindow):
                     break
             self.search_synths.setText("")
             self.populate_synth_list()
-            items = self.list_synths.findItems(filename, Qt.MatchFlag.MatchExactly if hasattr(Qt, "MatchFlag") else Qt.MatchExactly)
+            items = self.list_synths.findItems(filename, Qt.MatchFlag.MatchExactly)
             if items:
                 self.list_synths.setCurrentItem(items[0])
             else:
@@ -1394,7 +1374,7 @@ class MainWindow(QMainWindow):
         tab = QWidget()
         layout = QVBoxLayout(tab)
         
-        splitter = QSplitter(Qt.Orientation.Horizontal if hasattr(Qt, "Orientation") else Qt.Horizontal)
+        splitter = QSplitter(Qt.Orientation.Horizontal)
         layout.addWidget(splitter)
         
         # Left Side Pane: List & Search
@@ -1420,7 +1400,7 @@ class MainWindow(QMainWindow):
         
         # Empty/Welcome View
         self.lbl_synth_welcome = QLabel("Select a synthesizer file from the list to modify its parameters.")
-        self.lbl_synth_welcome.setAlignment(get_align_center())
+        self.lbl_synth_welcome.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.lbl_synth_welcome.setStyleSheet("color: #a0a0aa; font-size: 11pt;")
         self.synth_right_layout.addWidget(self.lbl_synth_welcome)
         
@@ -1927,7 +1907,7 @@ class MainWindow(QMainWindow):
         # ── Right pane: profile editor ─────────────────────────────────────
         right_pane = QScrollArea()
         right_pane.setWidgetResizable(True)
-        right_pane.setFrameShape(QFrame.Shape.NoFrame if hasattr(QFrame, "Shape") else QFrame.NoFrame)
+        right_pane.setFrameShape(QFrame.Shape.NoFrame)
         right_pane.setStyleSheet("background-color: #1e1e2a;")
 
         right_content = QWidget()
@@ -1938,7 +1918,7 @@ class MainWindow(QMainWindow):
 
         # Welcome / empty state
         self.lbl_profile_welcome = QLabel("Select a profile from the list, or create a new one.")
-        self.lbl_profile_welcome.setAlignment(get_align_center())
+        self.lbl_profile_welcome.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.lbl_profile_welcome.setStyleSheet(
             "color: #5060aa; font-size: 12pt; border: none;"
         )
@@ -1974,7 +1954,7 @@ class MainWindow(QMainWindow):
         desc_layout.addWidget(self.edit_profile_desc)
         btn_save_desc = QPushButton("Save Description")
         btn_save_desc.clicked.connect(self.action_save_profile_description)
-        desc_layout.addWidget(btn_save_desc, 0, get_align_left() if hasattr(get_align_left(), "__int__") else get_align_left())
+        desc_layout.addWidget(btn_save_desc, 0, Qt.AlignmentFlag.AlignLeft)
         editor_v.addWidget(desc_grp)
 
         # Stats
@@ -1984,7 +1964,7 @@ class MainWindow(QMainWindow):
 
         # Separator
         sep = QFrame()
-        sep.setFrameShape(QFrame.Shape.HLine if hasattr(QFrame, "Shape") else QFrame.HLine)
+        sep.setFrameShape(QFrame.Shape.HLine)
         sep.setStyleSheet("color: #2a2a40;")
         editor_v.addWidget(sep)
 
