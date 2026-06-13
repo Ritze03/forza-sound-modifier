@@ -1,0 +1,243 @@
+use crate::app::{App, Dialog, ConfirmAction, COL_GOLD, COL_GRAY, COL_BLUE_HINT};
+use crate::data::GLOBAL_CATEGORIES;
+
+pub fn render(app: &mut App, ui: &mut egui::Ui, _ctx: &egui::Context) {
+    // Left panel: synth list
+    egui::SidePanel::left("synth_list_panel")
+        .min_width(220.0)
+        .max_width(340.0)
+        .resizable(true)
+        .show_inside(ui, |ui| {
+            ui.add_space(4.0);
+            let resp = ui.add(
+                egui::TextEdit::singleline(&mut app.synth_search)
+                    .hint_text("Search synthesizers…")
+                    .desired_width(f32::INFINITY)
+            );
+            if resp.changed() { /* filter is live */ }
+            ui.add_space(4.0);
+
+            let search = app.synth_search.to_lowercase();
+            egui::ScrollArea::vertical().show(ui, |ui| {
+                // Global category entries (always visible)
+                for (cat, _, _) in GLOBAL_CATEGORIES {
+                    let sel = app.selected_synth.as_deref() == Some(cat);
+                    let has_ov = app.config.data.synth_overrides.contains_key(*cat);
+                    let label = if has_ov {
+                        egui::RichText::new(format!("● {}", cat)).color(COL_GOLD)
+                    } else {
+                        egui::RichText::new(*cat).color(COL_BLUE_HINT)
+                    };
+                    if ui.selectable_label(sel, label).clicked() {
+                        if app.selected_synth.as_deref() != Some(cat) {
+                            app.selected_synth = Some(cat.to_string());
+                            app.loaded_synth = None;
+                        }
+                    }
+                }
+                ui.separator();
+
+                // Individual synth files
+                let files: Vec<String> = app.synth_list.iter()
+                    .filter(|f| search.is_empty() || f.to_lowercase().contains(&search))
+                    .cloned()
+                    .collect();
+                for fname in files {
+                    let sel = app.selected_synth.as_deref() == Some(&fname);
+                    let has_ov = app.config.data.synth_overrides.contains_key(&fname);
+                    let label = if has_ov {
+                        egui::RichText::new(format!("● {}", fname)).color(COL_GOLD)
+                    } else {
+                        egui::RichText::new(&fname)
+                    };
+                    if ui.selectable_label(sel, label).clicked() {
+                        if app.selected_synth.as_deref() != Some(&fname) {
+                            app.selected_synth = Some(fname.clone());
+                            app.loaded_synth = None;
+                        }
+                    }
+                }
+            });
+        });
+
+    // Right panel: editor
+    egui::CentralPanel::default().show_inside(ui, |ui| {
+        match app.selected_synth.clone().as_deref() {
+            None => {
+                ui.centered_and_justified(|ui| {
+                    ui.colored_label(COL_GRAY,
+                        "Select a synthesizer file from the list to modify its parameters.");
+                });
+            }
+            Some(filename) => {
+                let filename = filename.to_string();
+                app.load_synth_fields(&filename);
+                render_synth_editor(app, ui, &filename);
+            }
+        }
+    });
+}
+
+fn render_synth_editor(app: &mut App, ui: &mut egui::Ui, filename: &str) {
+    let is_global = filename.starts_with("[Global ");
+
+    ui.horizontal(|ui| {
+        ui.heading(filename);
+        ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+            if ui.add(egui::Button::new("Clear Overrides for This Synth")
+                .fill(egui::Color32::from_rgb(80, 30, 30))).clicked()
+            {
+                app.dialog = Some(Dialog::Confirm {
+                    title: "Clear Synth Overrides".into(),
+                    message: format!("Clear all overrides for {}?", filename),
+                    action: ConfirmAction::ClearSynthOverrides(filename.to_string()),
+                });
+            }
+        });
+    });
+
+    // Description banner for global categories
+    if is_global {
+        if let Some((_, file_pat, desc)) = crate::data::GLOBAL_CATEGORIES.iter()
+            .find(|(cat, _, _)| *cat == filename)
+        {
+            let banner_text = format!("ℹ  {} — {}", file_pat, desc);
+            egui::Frame::none()
+                .fill(egui::Color32::from_rgb(30, 42, 58))
+                .inner_margin(egui::Margin::same(8.0))
+                .show(ui, |ui| {
+                    ui.colored_label(egui::Color32::from_rgb(160, 200, 255), banner_text);
+                });
+        }
+    }
+
+    ui.separator();
+
+    let mut changed = false;
+
+    egui::ScrollArea::vertical().show(ui, |ui| {
+        // Channel group
+        let channel_fields: Vec<usize> = app.synth_fields.iter().enumerate()
+            .filter(|(_, f)| f.element == "Channel")
+            .map(|(i, _)| i)
+            .collect();
+        if !channel_fields.is_empty() {
+            egui::Frame::group(ui.style()).show(ui, |ui| {
+                let title = if is_global {
+                    format!("Channel Volume & RPM  —  {}", filename)
+                } else {
+                    "Channel Volume & RPM Settings".into()
+                };
+                ui.label(egui::RichText::new(title).strong());
+                ui.add_space(4.0);
+                for i in &channel_fields {
+                    if render_synth_row(app, ui, *i) { changed = true; }
+                }
+            });
+            ui.add_space(8.0);
+        }
+
+        // GearCrack group
+        let gc_fields: Vec<usize> = app.synth_fields.iter().enumerate()
+            .filter(|(_, f)| f.element == "GearCrack")
+            .map(|(i, _)| i)
+            .collect();
+        if !gc_fields.is_empty() {
+            egui::Frame::group(ui.style()).show(ui, |ui| {
+                ui.label(egui::RichText::new("Gear Crack Settings").strong());
+                ui.add_space(4.0);
+                for i in &gc_fields {
+                    if render_synth_row(app, ui, *i) { changed = true; }
+                }
+            });
+            ui.add_space(8.0);
+        }
+
+        // Advanced group (fields beyond the core ones)
+        let core_attrs = ["MasterVolume", "MinRPM", "MaxRPM", "Volume"];
+        let adv_fields: Vec<usize> = app.synth_fields.iter().enumerate()
+            .filter(|(_, f)| !core_attrs.contains(&f.attr.as_str()) && f.element != "Channel" && f.element != "GearCrack")
+            .map(|(i, _)| i)
+            .collect();
+        if !adv_fields.is_empty() {
+            egui::Frame::group(ui.style()).show(ui, |ui| {
+                ui.label(egui::RichText::new("Advanced Attributes").strong());
+                ui.add_space(4.0);
+                for i in &adv_fields {
+                    if render_synth_row(app, ui, *i) { changed = true; }
+                }
+            });
+        }
+    });
+
+    if changed {
+        let fname = filename.to_string();
+        app.save_synth_to_config(&fname);
+    }
+}
+
+/// Renders one row and returns whether anything changed.
+fn render_synth_row(app: &mut App, ui: &mut egui::Ui, idx: usize) -> bool {
+    let mut changed = false;
+    let field = app.synth_fields[idx].clone();
+
+    ui.horizontal(|ui| {
+        // Attribute name
+        let name_color = if field.is_diff { COL_GOLD } else { egui::Color32::GRAY };
+        ui.colored_label(name_color, &field.attr);
+        ui.add_space(8.0);
+
+        // Stock label
+        if let Some(sv) = &field.stock_value {
+            let sc = if field.is_diff { COL_GOLD } else { COL_GRAY };
+            ui.colored_label(sc, format!("Stock: {}", sv));
+        } else {
+            ui.colored_label(COL_BLUE_HINT, "(global default)");
+        }
+
+        ui.add_space(8.0);
+
+        // Checkbox
+        let mut en = app.synth_fields[idx].enabled;
+        if ui.checkbox(&mut en, "Override").changed() {
+            app.synth_fields[idx].enabled = en;
+            if !en { app.synth_fields[idx].value.clear(); }
+            changed = true;
+        }
+
+        // Value editor
+        ui.add_enabled_ui(app.synth_fields[idx].enabled, |ui| {
+            if field.is_bool {
+                let before = app.synth_fields[idx].value.clone();
+                egui::ComboBox::from_id_salt(format!("synth_bool_{}_{}", idx, field.attr))
+                    .selected_text(&app.synth_fields[idx].value)
+                    .width(100.0)
+                    .show_ui(ui, |ui| {
+                        ui.selectable_value(&mut app.synth_fields[idx].value, "True".into(), "True");
+                        ui.selectable_value(&mut app.synth_fields[idx].value, "False".into(), "False");
+                    });
+                if app.synth_fields[idx].value != before { changed = true; }
+            } else {
+                let resp = ui.add(
+                    egui::TextEdit::singleline(&mut app.synth_fields[idx].value)
+                        .desired_width(140.0)
+                );
+                if resp.changed() { changed = true; }
+            }
+        });
+
+        // Recompute diff
+        let sv = app.synth_fields[idx].stock_value.as_deref().unwrap_or("");
+        let fname = app.selected_synth.as_deref().unwrap_or("").to_string();
+        let is_global_entry = fname.starts_with("[Global ");
+        app.synth_fields[idx].is_diff = if is_global_entry || sv.is_empty() {
+            app.synth_fields[idx].enabled && !app.synth_fields[idx].value.is_empty()
+        } else {
+            app.synth_fields[idx].enabled
+                && !app.synth_fields[idx].value.is_empty()
+                && app.synth_fields[idx].value != sv
+        };
+    });
+
+    changed
+}
