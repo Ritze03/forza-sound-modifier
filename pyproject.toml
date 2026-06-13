@@ -9,7 +9,6 @@ description = "GUI for editing Forza Horizon 6 sound profiles"
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
-    "PySide6>=6.7",
     "PyQt6>=6.7",
 ]
 
