@@ -38,7 +38,7 @@ pub fn render(app: &mut App, ui: &mut egui::Ui, _ctx: &egui::Context) {
                     .collect();
                 for name in bundled_names {
                     let sel = app.selected_bundled.as_deref() == Some(&name);
-                    let label = egui::RichText::new(format!("◆  {}", name)).color(COL_BUILT_IN);
+                    let label = egui::RichText::new(name.as_str()).color(COL_BUILT_IN);
                     if ui.selectable_label(sel, label).clicked() {
                         app.selected_bundled = Some(name.clone());
                         app.selected_profile = None;
@@ -65,9 +65,9 @@ pub fn render(app: &mut App, ui: &mut egui::Ui, _ctx: &egui::Context) {
                     let is_active = name == active;
                     let sel = app.selected_profile.as_deref() == Some(&name);
                     let label = if is_active {
-                        egui::RichText::new(format!("★  {}", name)).color(COL_GREEN)
+                        egui::RichText::new(name.as_str()).color(COL_GREEN).strong()
                     } else {
-                        egui::RichText::new(format!("   {}", name))
+                        egui::RichText::new(name.as_str())
                     };
                     if ui.selectable_label(sel, label).clicked() {
                         if app.selected_profile.as_deref() != Some(&name) {
@@ -84,7 +84,7 @@ pub fn render(app: &mut App, ui: &mut egui::Ui, _ctx: &egui::Context) {
 
             ui.add_space(8.0);
             ui.horizontal(|ui| {
-                if ui.add(egui::Button::new("＋ New")
+                if ui.add(egui::Button::new("+ New")
                     .fill(egui::Color32::from_rgb(26, 58, 42))).clicked()
                 {
                     app.dialog = Some(Dialog::TextInput {
@@ -96,7 +96,7 @@ pub fn render(app: &mut App, ui: &mut egui::Ui, _ctx: &egui::Context) {
                 }
                 let can_dup = app.selected_profile.is_some();
                 ui.add_enabled_ui(can_dup, |ui| {
-                    if ui.button("⧉ Duplicate").clicked() {
+                    if ui.button("Duplicate").clicked() {
                         if let Some(ref name) = app.selected_profile.clone() {
                             let src = name.clone();
                             let default_name = format!("{} (copy)", src);
@@ -184,7 +184,7 @@ fn render_bundled_editor(app: &mut App, ui: &mut egui::Ui, name: String) {
             ui.add_space(4.0);
 
             // Load into editor
-            if ui.add(egui::Button::new("📂  Load Profile into Editor")
+            if ui.add(egui::Button::new("Load Profile into Editor")
                 .fill(egui::Color32::from_rgb(42, 46, 30))
                 .min_size(egui::vec2(300.0, 0.0)))
                 .clicked()
@@ -199,7 +199,7 @@ fn render_bundled_editor(app: &mut App, ui: &mut egui::Ui, name: String) {
             ui.add_space(2.0);
 
             // Apply to game
-            if ui.add(egui::Button::new("▶  Apply Profile to Game")
+            if ui.add(egui::Button::new("Apply Profile to Game")
                 .fill(egui::Color32::from_rgb(26, 58, 26))
                 .min_size(egui::vec2(300.0, 0.0)))
                 .clicked()
@@ -233,7 +233,7 @@ fn render_profile_editor(app: &mut App, ui: &mut egui::Ui, name: String) {
                 ui.add(egui::TextEdit::singleline(&mut app.profile_name_buf)
                     .desired_width(240.0)
                     .hint_text("Profile name…"));
-                if ui.button("✏ Rename").clicked() {
+                if ui.button("Rename").clicked() {
                     let new_name = app.profile_name_buf.trim().to_string();
                     if !new_name.is_empty() && new_name != name {
                         do_rename_profile(app, &name, &new_name);
@@ -269,7 +269,7 @@ fn render_profile_editor(app: &mut App, ui: &mut egui::Ui, name: String) {
             let n_synth  = p.synth_overrides.len();
             let n_misc   = p.misc_overrides.len();
             let is_active = name == app.config.data.active_profile;
-            let active_tag = if is_active { "  ✓ ACTIVE" } else { "" };
+            let active_tag = if is_active { "  [ACTIVE]" } else { "" };
             ui.colored_label(COL_GRAY,
                 format!("Created: {}{}\nCar overrides: {}  ·  Global: {}  ·  Class: {}  ·  Misc: {}",
                     p.created, active_tag, n_car, n_global, n_synth, n_misc));
@@ -282,7 +282,7 @@ fn render_profile_editor(app: &mut App, ui: &mut egui::Ui, name: String) {
             ui.label(egui::RichText::new("Profile Actions").strong());
             ui.add_space(4.0);
 
-            if ui.add(egui::Button::new("💾  Save Current Settings to This Profile")
+            if ui.add(egui::Button::new("Save Current Settings to This Profile")
                 .fill(egui::Color32::from_rgb(30, 46, 74))
                 .min_size(egui::vec2(300.0, 0.0)))
                 .clicked()
@@ -296,7 +296,7 @@ fn render_profile_editor(app: &mut App, ui: &mut egui::Ui, name: String) {
 
             ui.add_space(2.0);
 
-            if ui.add(egui::Button::new("📂  Load Profile into Editor")
+            if ui.add(egui::Button::new("Load Profile into Editor")
                 .fill(egui::Color32::from_rgb(42, 46, 30))
                 .min_size(egui::vec2(300.0, 0.0)))
                 .clicked()
@@ -310,7 +310,7 @@ fn render_profile_editor(app: &mut App, ui: &mut egui::Ui, name: String) {
 
             ui.add_space(2.0);
 
-            if ui.add(egui::Button::new("▶  Apply Profile to Game")
+            if ui.add(egui::Button::new("Apply Profile to Game")
                 .fill(egui::Color32::from_rgb(26, 58, 26))
                 .min_size(egui::vec2(300.0, 0.0)))
                 .clicked()
@@ -333,7 +333,7 @@ fn render_profile_editor(app: &mut App, ui: &mut egui::Ui, name: String) {
 
             let can_delete = app.config.profiles.len() > 1;
             ui.add_enabled_ui(can_delete, |ui| {
-                if ui.add(egui::Button::new("🗑  Delete Profile")
+                if ui.add(egui::Button::new("Delete Profile")
                     .fill(egui::Color32::from_rgb(58, 26, 26))
                     .min_size(egui::vec2(300.0, 0.0)))
                     .clicked()

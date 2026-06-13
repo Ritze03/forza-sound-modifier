@@ -315,7 +315,7 @@ fn render_car_grid(app: &mut App, ui: &mut egui::Ui, car_id: &str, keys: &[&str]
                             }
                         };
                         let has_target = nav_val.as_deref().map_or(false, |v| !v.is_empty() && v != "—");
-                        if ui.add_enabled(has_target, egui::Button::new("🔗").small()).clicked() {
+                        if ui.add_enabled(has_target, egui::Button::new("->").small()).clicked() {
                             if let Some(v) = nav_val {
                                 app.navigate_to_synth = Some(format!("{}.xml", v));
                             }

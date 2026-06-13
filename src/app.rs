@@ -489,7 +489,7 @@ impl eframe::App for App {
                     });
                 }
                 ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                    let btn = egui::Button::new("▶  Apply Mod Profile")
+                    let btn = egui::Button::new("Apply Mod Profile")
                         .fill(Color32::from_rgb(34, 139, 34));
                     if ui.add(btn).clicked() {
                         if !self.backup_exists {

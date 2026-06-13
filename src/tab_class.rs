@@ -101,7 +101,7 @@ fn render_synth_editor(app: &mut App, ui: &mut egui::Ui, filename: &str) {
         if let Some((_, file_pat, desc)) = crate::data::GLOBAL_CATEGORIES.iter()
             .find(|(cat, _, _)| *cat == filename)
         {
-            let banner_text = format!("ℹ  {} — {}", file_pat, desc);
+            let banner_text = format!("{}  —  {}", file_pat, desc);
             egui::Frame::none()
                 .fill(egui::Color32::from_rgb(30, 42, 58))
                 .inner_margin(egui::Margin::same(8.0))
