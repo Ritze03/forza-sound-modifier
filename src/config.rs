@@ -172,6 +172,10 @@ impl Config {
     }
 }
 
+pub fn profiles_dir() -> PathBuf {
+    config_base_dir().join("profiles")
+}
+
 fn config_base_dir() -> PathBuf {
     dirs::data_dir()
         .unwrap_or_else(|| PathBuf::from("."))

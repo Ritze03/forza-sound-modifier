@@ -19,6 +19,7 @@ dirs = "5"
 rfd = "0.14"
 regex = "1"
 chrono = { version = "0.4", default-features = false, features = ["std", "clock"] }
+opener = "0.7"
 
 [profile.release]
 opt-level = 3

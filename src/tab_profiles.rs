@@ -110,6 +110,12 @@ pub fn render(app: &mut App, ui: &mut egui::Ui, _ctx: &egui::Context) {
                     }
                 });
             });
+            ui.add_space(4.0);
+            if ui.button("Open Profiles Folder").clicked() {
+                let dir = crate::config::profiles_dir();
+                std::fs::create_dir_all(&dir).ok();
+                opener::open(&dir).ok();
+            }
         });
 
     egui::CentralPanel::default().show_inside(ui, |ui| {
