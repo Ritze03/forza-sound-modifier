@@ -104,6 +104,12 @@ pub fn tr(lang: Language, key: &'static str) -> &'static str {
         "BlurRim Rotation Limit (MaxRPM)" => "Felgen-Unschärfe-Rotationslimit (MaxRPM)",
         "Backfire Minimum Delay (ms)"    => "Fehlzündung Min. Verzögerung (ms)",
         "Backfire Maximum Delay (ms)"    => "Fehlzündung Max. Verzögerung (ms)",
+        // Setup wizard
+        "Start Setup" => "Einrichtung starten",
+        "Back"        => "Zurück",
+        "Next"        => "Weiter",
+        "Finish"      => "Fertig",
+        "Skip"        => "Überspringen",
         // Dialogs
         "Yes"    => "Ja",
         "No"     => "Nein",

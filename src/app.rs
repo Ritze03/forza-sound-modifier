@@ -132,6 +132,9 @@ pub struct App {
 
     // Dialog
     pub dialog: Option<Dialog>,
+
+    // Setup wizard
+    pub wizard_step: Option<usize>,
 }
 
 impl App {
@@ -169,6 +172,7 @@ impl App {
             profile_desc_buf: String::new(),
             bundled_profiles: load_bundled_profiles(),
             dialog: None,
+            wizard_step: None,
             car_list: Vec::new(),
             synth_list: Vec::new(),
             scraped: ScrapedOptions::default(),
