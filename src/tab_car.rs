@@ -11,8 +11,9 @@ pub fn render(app: &mut App, ui: &mut egui::Ui, _ctx: &egui::Context) {
         .resizable(true)
         .show_inside(ui, |ui| {
             ui.add_space(4.0);
+            let hint = app.t("Search cars…");
             ui.add(egui::TextEdit::singleline(&mut app.car_search)
-                .hint_text(app.t("Search cars…"))
+                .hint_text(hint)
                 .desired_width(f32::INFINITY));
             ui.add_space(4.0);
 
@@ -120,7 +121,7 @@ fn render_global(app: &mut App, ui: &mut egui::Ui) {
     });
 }
 
-fn render_global_grid(app: &mut App, ui: &mut egui::Ui, keys: &[&str]) {
+fn render_global_grid(app: &mut App, ui: &mut egui::Ui, keys: &[&'static str]) {
     let mut changed = false;
     let lang = app.config.data.language;
     let human = app.config.data.human_readable_values;
@@ -240,7 +241,7 @@ fn render_car(app: &mut App, ui: &mut egui::Ui, car_id: &str) {
     });
 }
 
-fn render_car_grid(app: &mut App, ui: &mut egui::Ui, car_id: &str, keys: &[&str]) {
+fn render_car_grid(app: &mut App, ui: &mut egui::Ui, car_id: &str, keys: &[&'static str]) {
     let car = app.car_list.iter().find(|c| c.id == car_id).cloned();
     let lang = app.config.data.language;
     let human = app.config.data.human_readable_values;

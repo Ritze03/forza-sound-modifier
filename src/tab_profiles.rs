@@ -9,13 +9,13 @@ pub fn render(app: &mut App, ui: &mut egui::Ui, _ctx: &egui::Context) {
         .inner_margin(egui::Margin::symmetric(20.0, 12.0))
         .show(ui, |ui| {
             ui.horizontal(|ui| {
-                ui.heading(egui::RichText::new("Sound Profiles").color(egui::Color32::from_rgb(192, 200, 255)));
+                ui.heading(egui::RichText::new(app.t("Sound Profiles")).color(egui::Color32::from_rgb(192, 200, 255)));
                 ui.add_space(12.0);
-                ui.colored_label(COL_GRAY, "Save, load, and switch between complete sets of sound overrides");
+                ui.colored_label(COL_GRAY, app.t("Save, load, and switch between complete sets of sound overrides"));
                 ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
                     let active = app.config.data.active_profile.clone();
                     if !active.is_empty() {
-                        ui.colored_label(COL_GREEN, format!("Active: {}", active));
+                        ui.colored_label(COL_GREEN, format!("{} {}", app.t("Active:"), active));
                     }
                 });
             });
@@ -31,7 +31,7 @@ pub fn render(app: &mut App, ui: &mut egui::Ui, _ctx: &egui::Context) {
                 ui.with_layout(egui::Layout::top_down_justified(egui::Align::LEFT), |ui| {
                     // ── Built-in profiles ─────────────────────────────────────
                     ui.add_space(8.0);
-                    ui.colored_label(COL_BUILT_IN, "BUILT-IN PROFILES");
+                    ui.colored_label(COL_BUILT_IN, app.t("BUILT-IN PROFILES"));
                     ui.add_space(4.0);
 
                     let bundled_names: Vec<String> = app.bundled_profiles.iter()
@@ -56,7 +56,7 @@ pub fn render(app: &mut App, ui: &mut egui::Ui, _ctx: &egui::Context) {
 
                     // ── User profiles ─────────────────────────────────────────
                     ui.add_space(4.0);
-                    ui.colored_label(COL_GRAY, "YOUR PROFILES");
+                    ui.colored_label(COL_GRAY, app.t("YOUR PROFILES"));
                     ui.add_space(4.0);
 
                     let active = app.config.data.active_profile.clone();
@@ -86,7 +86,7 @@ pub fn render(app: &mut App, ui: &mut egui::Ui, _ctx: &egui::Context) {
 
             ui.add_space(8.0);
             let row = ui.horizontal(|ui| {
-                if ui.add(egui::Button::new("+ New")
+                if ui.add(egui::Button::new(app.t("+ New"))
                     .fill(egui::Color32::from_rgb(26, 58, 42))).clicked()
                 {
                     app.dialog = Some(Dialog::TextInput {
@@ -98,7 +98,7 @@ pub fn render(app: &mut App, ui: &mut egui::Ui, _ctx: &egui::Context) {
                 }
                 let can_dup = app.selected_profile.is_some();
                 ui.add_enabled_ui(can_dup, |ui| {
-                    if ui.button("Duplicate").clicked() {
+                    if ui.button(app.t("Duplicate")).clicked() {
                         if let Some(ref name) = app.selected_profile.clone() {
                             let src = name.clone();
                             let default_name = format!("{} (copy)", src);
@@ -114,7 +114,7 @@ pub fn render(app: &mut App, ui: &mut egui::Ui, _ctx: &egui::Context) {
             });
             let row_width = row.response.rect.width();
             ui.add_space(4.0);
-            if ui.add(egui::Button::new("Open Profiles Folder")
+            if ui.add(egui::Button::new(app.t("Open Profiles Folder"))
                 .min_size(egui::vec2(row_width, 0.0))).clicked()
             {
                 let dir = crate::config::profiles_dir();
@@ -131,7 +131,7 @@ pub fn render(app: &mut App, ui: &mut egui::Ui, _ctx: &egui::Context) {
                 None => {
                     ui.centered_and_justified(|ui| {
                         ui.colored_label(egui::Color32::from_rgb(80, 96, 170),
-                            "Select a profile from the list, or create a new one.");
+                            app.t("Select a profile from the list, or create a new one."));
                     });
                 }
                 Some(ref name) => {
@@ -166,7 +166,7 @@ fn render_bundled_editor(app: &mut App, ui: &mut egui::Ui, name: String) {
                 .inner_margin(egui::Margin::symmetric(6.0, 2.0))
                 .rounding(egui::Rounding::same(4.0))
                 .show(ui, |ui| {
-                    ui.colored_label(COL_BUILT_IN, "BUILT-IN");
+                    ui.colored_label(COL_BUILT_IN, app.t("BUILT-IN"));
                 });
         });
 
@@ -180,22 +180,25 @@ fn render_bundled_editor(app: &mut App, ui: &mut egui::Ui, name: String) {
 
         // Stats
         ui.add_space(6.0);
-        let n_synth = profile.synth_overrides.len();
-        let n_misc  = profile.misc_overrides.len();
+        let n_synth  = profile.synth_overrides.len();
+        let n_misc   = profile.misc_overrides.len();
         let n_global = profile.global_overrides.len();
-        ui.colored_label(COL_GRAY,
-            format!("Created: {}   ·   Class: {}  ·  Global: {}  ·  Misc: {}",
-                profile.created, n_synth, n_global, n_misc));
+        ui.colored_label(COL_GRAY, format!(
+            "{} {}   ·   {} {}  ·  {} {}  ·  {} {}",
+            app.t("Created:"), profile.created,
+            app.t("Class:"), n_synth,
+            app.t("Global:"), n_global,
+            app.t("Misc:"), n_misc,
+        ));
 
         ui.separator();
         ui.add_space(4.0);
 
         egui::Frame::group(ui.style()).show(ui, |ui| {
-            ui.label(egui::RichText::new("Profile Actions").strong());
+            ui.label(egui::RichText::new(app.t("Profile Actions")).strong());
             ui.add_space(4.0);
 
-            // Load into editor
-            if ui.add(egui::Button::new("Load Profile into Editor")
+            if ui.add(egui::Button::new(app.t("Load Profile into Editor"))
                 .fill(egui::Color32::from_rgb(42, 46, 30))
                 .min_size(egui::vec2(300.0, 0.0)))
                 .clicked()
@@ -209,8 +212,7 @@ fn render_bundled_editor(app: &mut App, ui: &mut egui::Ui, name: String) {
 
             ui.add_space(2.0);
 
-            // Apply to game
-            if ui.add(egui::Button::new("Apply Profile to Game")
+            if ui.add(egui::Button::new(app.t("Apply Profile to Game"))
                 .fill(egui::Color32::from_rgb(26, 58, 26))
                 .min_size(egui::vec2(300.0, 0.0)))
                 .clicked()
@@ -239,12 +241,13 @@ fn render_profile_editor(app: &mut App, ui: &mut egui::Ui, name: String) {
         ui.add_space(8.0);
 
         egui::Frame::group(ui.style()).show(ui, |ui| {
-            ui.label(egui::RichText::new("Profile Name").strong());
+            ui.label(egui::RichText::new(app.t("Profile Name")).strong());
             ui.horizontal(|ui| {
+                let hint = app.t("Profile name…");
                 ui.add(egui::TextEdit::singleline(&mut app.profile_name_buf)
                     .desired_width(240.0)
-                    .hint_text("Profile name…"));
-                if ui.button("Rename").clicked() {
+                    .hint_text(hint));
+                if ui.button(app.t("Rename")).clicked() {
                     let new_name = app.profile_name_buf.trim().to_string();
                     if !new_name.is_empty() && new_name != name {
                         do_rename_profile(app, &name, &new_name);
@@ -256,12 +259,13 @@ fn render_profile_editor(app: &mut App, ui: &mut egui::Ui, name: String) {
         ui.add_space(8.0);
 
         egui::Frame::group(ui.style()).show(ui, |ui| {
-            ui.label(egui::RichText::new("Description (optional)").strong());
+            ui.label(egui::RichText::new(app.t("Description (optional)")).strong());
+            let hint = app.t("Add a description…");
             ui.add(egui::TextEdit::multiline(&mut app.profile_desc_buf)
                 .desired_rows(3)
                 .desired_width(f32::INFINITY)
-                .hint_text("Add a description…"));
-            if ui.button("Save Description").clicked() {
+                .hint_text(hint));
+            if ui.button(app.t("Save Description")).clicked() {
                 let desc = app.profile_desc_buf.clone();
                 if let Some(p) = app.config.profiles.get_mut(&name) {
                     p.description = desc;
@@ -280,20 +284,25 @@ fn render_profile_editor(app: &mut App, ui: &mut egui::Ui, name: String) {
             let n_synth  = p.synth_overrides.len();
             let n_misc   = p.misc_overrides.len();
             let is_active = name == app.config.data.active_profile;
-            let active_tag = if is_active { "  [ACTIVE]" } else { "" };
-            ui.colored_label(COL_GRAY,
-                format!("Created: {}{}\nCar overrides: {}  ·  Global: {}  ·  Class: {}  ·  Misc: {}",
-                    p.created, active_tag, n_car, n_global, n_synth, n_misc));
+            let active_tag = if is_active { format!("  {}", app.t("[ACTIVE]")) } else { String::new() };
+            ui.colored_label(COL_GRAY, format!(
+                "{} {}{}\n{} {}  ·  {} {}  ·  {} {}  ·  {} {}",
+                app.t("Created:"), p.created, active_tag,
+                app.t("Car overrides:"), n_car,
+                app.t("Global:"), n_global,
+                app.t("Class:"), n_synth,
+                app.t("Misc:"), n_misc,
+            ));
         }
 
         ui.separator();
         ui.add_space(4.0);
 
         egui::Frame::group(ui.style()).show(ui, |ui| {
-            ui.label(egui::RichText::new("Profile Actions").strong());
+            ui.label(egui::RichText::new(app.t("Profile Actions")).strong());
             ui.add_space(4.0);
 
-            if ui.add(egui::Button::new("Save Current Settings to This Profile")
+            if ui.add(egui::Button::new(app.t("Save Current Settings to This Profile"))
                 .fill(egui::Color32::from_rgb(30, 46, 74))
                 .min_size(egui::vec2(300.0, 0.0)))
                 .clicked()
@@ -307,7 +316,7 @@ fn render_profile_editor(app: &mut App, ui: &mut egui::Ui, name: String) {
 
             ui.add_space(2.0);
 
-            if ui.add(egui::Button::new("Load Profile into Editor")
+            if ui.add(egui::Button::new(app.t("Load Profile into Editor"))
                 .fill(egui::Color32::from_rgb(42, 46, 30))
                 .min_size(egui::vec2(300.0, 0.0)))
                 .clicked()
@@ -321,7 +330,7 @@ fn render_profile_editor(app: &mut App, ui: &mut egui::Ui, name: String) {
 
             ui.add_space(2.0);
 
-            if ui.add(egui::Button::new("Apply Profile to Game")
+            if ui.add(egui::Button::new(app.t("Apply Profile to Game"))
                 .fill(egui::Color32::from_rgb(26, 58, 26))
                 .min_size(egui::vec2(300.0, 0.0)))
                 .clicked()
@@ -344,7 +353,7 @@ fn render_profile_editor(app: &mut App, ui: &mut egui::Ui, name: String) {
 
             let can_delete = app.config.profiles.len() > 1;
             ui.add_enabled_ui(can_delete, |ui| {
-                if ui.add(egui::Button::new("Delete Profile")
+                if ui.add(egui::Button::new(app.t("Delete Profile"))
                     .fill(egui::Color32::from_rgb(58, 26, 26))
                     .min_size(egui::vec2(300.0, 0.0)))
                     .clicked()

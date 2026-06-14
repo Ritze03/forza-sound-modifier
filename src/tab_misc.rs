@@ -1,23 +1,25 @@
 use crate::app::{App, COL_GOLD, COL_GRAY};
+use crate::i18n;
 
 pub fn render(app: &mut App, ui: &mut egui::Ui) {
     egui::ScrollArea::vertical().show(ui, |ui| {
         ui.add_space(16.0);
 
         egui::Frame::group(ui.style()).show(ui, |ui| {
-            ui.label(egui::RichText::new("Global Vehicle Attributes Override").strong().size(14.0));
+            ui.label(egui::RichText::new(app.t("Global Vehicle Attributes Override")).strong().size(14.0));
             ui.add_space(8.0);
 
             let mut changed = false;
+            let lang = app.config.data.language;
 
             egui::Grid::new("misc_grid")
                 .num_columns(4)
                 .spacing([12.0, 8.0])
                 .show(ui, |ui| {
-                    ui.label(egui::RichText::new("Attribute").weak());
-                    ui.label(egui::RichText::new("Stock Value").weak());
-                    ui.label(egui::RichText::new("Override?").weak());
-                    ui.label(egui::RichText::new("New Value").weak());
+                    ui.label(egui::RichText::new(i18n::tr(lang, "Attribute")).weak());
+                    ui.label(egui::RichText::new(i18n::tr(lang, "Stock Value")).weak());
+                    ui.label(egui::RichText::new(i18n::tr(lang, "Override?")).weak());
+                    ui.label(egui::RichText::new(i18n::tr(lang, "New Value")).weak());
                     ui.end_row();
 
                     // BlurRim MaxRPM
@@ -29,8 +31,8 @@ pub fn render(app: &mut App, ui: &mut egui::Ui) {
                         let nc = if is_diff { COL_GOLD } else { egui::Color32::GRAY };
                         let sc = if is_diff { COL_GOLD } else { COL_GRAY };
 
-                        ui.colored_label(nc, "BlurRim Rotation Limit (MaxRPM)");
-                        ui.colored_label(sc, format!("Stock: {}", stock));
+                        ui.colored_label(nc, i18n::tr(lang, "BlurRim Rotation Limit (MaxRPM)"));
+                        ui.colored_label(sc, format!("{}{}", i18n::tr(lang, "Stock: "), stock));
 
                         let mut en = app.misc_blur_en;
                         if ui.checkbox(&mut en, "").changed() {
@@ -54,8 +56,8 @@ pub fn render(app: &mut App, ui: &mut egui::Ui) {
                         let nc = if is_diff { COL_GOLD } else { egui::Color32::GRAY };
                         let sc = if is_diff { COL_GOLD } else { COL_GRAY };
 
-                        ui.colored_label(nc, "Backfire Minimum Delay (ms)");
-                        ui.colored_label(sc, format!("Stock: {}", stock));
+                        ui.colored_label(nc, i18n::tr(lang, "Backfire Minimum Delay (ms)"));
+                        ui.colored_label(sc, format!("{}{}", i18n::tr(lang, "Stock: "), stock));
 
                         let mut en = app.misc_bfmin_en;
                         if ui.checkbox(&mut en, "").changed() {
@@ -79,8 +81,8 @@ pub fn render(app: &mut App, ui: &mut egui::Ui) {
                         let nc = if is_diff { COL_GOLD } else { egui::Color32::GRAY };
                         let sc = if is_diff { COL_GOLD } else { COL_GRAY };
 
-                        ui.colored_label(nc, "Backfire Maximum Delay (ms)");
-                        ui.colored_label(sc, format!("Stock: {}", stock));
+                        ui.colored_label(nc, i18n::tr(lang, "Backfire Maximum Delay (ms)"));
+                        ui.colored_label(sc, format!("{}{}", i18n::tr(lang, "Stock: "), stock));
 
                         let mut en = app.misc_bfmax_en;
                         if ui.checkbox(&mut en, "").changed() {

@@ -459,11 +459,11 @@ impl App {
 
     pub fn lang(&self) -> Language { self.config.data.language }
 
-    pub fn t(&self, key: &str) -> &'static str {
+    pub fn t(&self, key: &'static str) -> &'static str {
         i18n::tr(self.lang(), key)
     }
 
-    pub fn tr_param(&self, name: &str) -> &'static str {
+    pub fn tr_param(&self, name: &'static str) -> &'static str {
         if self.config.data.translate_params {
             i18n::tr_param(self.lang(), name)
         } else {

@@ -22,7 +22,7 @@ pub fn tr_none(lang: Language) -> &'static str {
 }
 
 /// Translates a static UI string. Falls back to the key itself.
-pub fn tr(lang: Language, key: &str) -> &'static str {
+pub fn tr(lang: Language, key: &'static str) -> &'static str {
     if lang == Language::English { return key; }
     match key {
         // Top bar
@@ -116,7 +116,7 @@ pub fn tr(lang: Language, key: &str) -> &'static str {
 }
 
 /// Translates a parameter display name (e.g. "Engine (Stock)") when translate_params is on.
-pub fn tr_param(lang: Language, name: &str) -> &'static str {
+pub fn tr_param(lang: Language, name: &'static str) -> &'static str {
     if lang != Language::German { return name; }
     match name {
         "RPMScalar (Stock)"    => "Drehzahlskalierung (Serien)",
