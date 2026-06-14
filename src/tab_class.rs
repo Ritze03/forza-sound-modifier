@@ -130,9 +130,7 @@ fn render_synth_editor(app: &mut App, ui: &mut egui::Ui, filename: &str) {
                 };
                 ui.label(egui::RichText::new(title).strong());
                 ui.add_space(4.0);
-                for i in &channel_fields {
-                    if render_synth_row(app, ui, *i) { changed = true; }
-                }
+                if render_synth_grid(app, ui, &channel_fields, &format!("synth_ch_{}", filename)) { changed = true; }
             });
             ui.add_space(8.0);
         }
@@ -146,9 +144,7 @@ fn render_synth_editor(app: &mut App, ui: &mut egui::Ui, filename: &str) {
             egui::Frame::group(ui.style()).show(ui, |ui| {
                 ui.label(egui::RichText::new("Gear Crack Settings").strong());
                 ui.add_space(4.0);
-                for i in &gc_fields {
-                    if render_synth_row(app, ui, *i) { changed = true; }
-                }
+                if render_synth_grid(app, ui, &gc_fields, &format!("synth_gc_{}", filename)) { changed = true; }
             });
             ui.add_space(8.0);
         }
@@ -163,9 +159,7 @@ fn render_synth_editor(app: &mut App, ui: &mut egui::Ui, filename: &str) {
             egui::Frame::group(ui.style()).show(ui, |ui| {
                 ui.label(egui::RichText::new("Advanced Attributes").strong());
                 ui.add_space(4.0);
-                for i in &adv_fields {
-                    if render_synth_row(app, ui, *i) { changed = true; }
-                }
+                if render_synth_grid(app, ui, &adv_fields, &format!("synth_adv_{}", filename)) { changed = true; }
             });
         }
     });
@@ -176,68 +170,84 @@ fn render_synth_editor(app: &mut App, ui: &mut egui::Ui, filename: &str) {
     }
 }
 
-/// Renders one row and returns whether anything changed.
+fn render_synth_grid(app: &mut App, ui: &mut egui::Ui, indices: &[usize], id: &str) -> bool {
+    let mut changed = false;
+    egui::Grid::new(id)
+        .num_columns(4)
+        .spacing([12.0, 4.0])
+        .striped(true)
+        .show(ui, |ui| {
+            ui.label(egui::RichText::new("Attribute").weak());
+            ui.label(egui::RichText::new("Stock Value").weak());
+            ui.label(egui::RichText::new("Override?").weak());
+            ui.label(egui::RichText::new("Value").weak());
+            ui.end_row();
+
+            for &idx in indices {
+                if render_synth_row(app, ui, idx) { changed = true; }
+            }
+        });
+    changed
+}
+
+/// Renders one grid row (4 cells) and returns whether anything changed.
 fn render_synth_row(app: &mut App, ui: &mut egui::Ui, idx: usize) -> bool {
     let mut changed = false;
     let field = app.synth_fields[idx].clone();
 
-    ui.horizontal(|ui| {
-        // Attribute name
-        let name_color = if field.is_diff { COL_GOLD } else { egui::Color32::GRAY };
-        ui.colored_label(name_color, &field.attr);
-        ui.add_space(8.0);
+    // Col 1: Attribute name
+    let name_color = if field.is_diff { COL_GOLD } else { egui::Color32::GRAY };
+    ui.colored_label(name_color, &field.attr);
 
-        // Stock label
-        if let Some(sv) = &field.stock_value {
-            let sc = if field.is_diff { COL_GOLD } else { COL_GRAY };
-            ui.colored_label(sc, format!("Stock: {}", sv));
+    // Col 2: Stock value
+    if let Some(sv) = &field.stock_value {
+        let sc = if field.is_diff { COL_GOLD } else { COL_GRAY };
+        ui.colored_label(sc, format!("Stock: {}", sv));
+    } else {
+        ui.colored_label(COL_BLUE_HINT, "(global default)");
+    }
+
+    // Col 3: Override checkbox
+    let mut en = app.synth_fields[idx].enabled;
+    if ui.checkbox(&mut en, "Override").changed() {
+        app.synth_fields[idx].enabled = en;
+        if !en { app.synth_fields[idx].value.clear(); }
+        changed = true;
+    }
+
+    // Col 4: Value editor
+    ui.add_enabled_ui(app.synth_fields[idx].enabled, |ui| {
+        if field.is_bool {
+            let before = app.synth_fields[idx].value.clone();
+            egui::ComboBox::from_id_salt(format!("synth_bool_{}_{}", idx, field.attr))
+                .selected_text(&app.synth_fields[idx].value)
+                .width(100.0)
+                .show_ui(ui, |ui| {
+                    ui.selectable_value(&mut app.synth_fields[idx].value, "True".into(), "True");
+                    ui.selectable_value(&mut app.synth_fields[idx].value, "False".into(), "False");
+                });
+            if app.synth_fields[idx].value != before { changed = true; }
         } else {
-            ui.colored_label(COL_BLUE_HINT, "(global default)");
+            let resp = ui.add(
+                egui::TextEdit::singleline(&mut app.synth_fields[idx].value)
+                    .desired_width(140.0)
+            );
+            if resp.changed() { changed = true; }
         }
-
-        ui.add_space(8.0);
-
-        // Checkbox
-        let mut en = app.synth_fields[idx].enabled;
-        if ui.checkbox(&mut en, "Override").changed() {
-            app.synth_fields[idx].enabled = en;
-            if !en { app.synth_fields[idx].value.clear(); }
-            changed = true;
-        }
-
-        // Value editor
-        ui.add_enabled_ui(app.synth_fields[idx].enabled, |ui| {
-            if field.is_bool {
-                let before = app.synth_fields[idx].value.clone();
-                egui::ComboBox::from_id_salt(format!("synth_bool_{}_{}", idx, field.attr))
-                    .selected_text(&app.synth_fields[idx].value)
-                    .width(100.0)
-                    .show_ui(ui, |ui| {
-                        ui.selectable_value(&mut app.synth_fields[idx].value, "True".into(), "True");
-                        ui.selectable_value(&mut app.synth_fields[idx].value, "False".into(), "False");
-                    });
-                if app.synth_fields[idx].value != before { changed = true; }
-            } else {
-                let resp = ui.add(
-                    egui::TextEdit::singleline(&mut app.synth_fields[idx].value)
-                        .desired_width(140.0)
-                );
-                if resp.changed() { changed = true; }
-            }
-        });
-
-        // Recompute diff
-        let sv = app.synth_fields[idx].stock_value.as_deref().unwrap_or("");
-        let fname = app.selected_synth.as_deref().unwrap_or("").to_string();
-        let is_global_entry = fname.starts_with("[Global ");
-        app.synth_fields[idx].is_diff = if is_global_entry || sv.is_empty() {
-            app.synth_fields[idx].enabled && !app.synth_fields[idx].value.is_empty()
-        } else {
-            app.synth_fields[idx].enabled
-                && !app.synth_fields[idx].value.is_empty()
-                && app.synth_fields[idx].value != sv
-        };
     });
 
+    // Recompute diff
+    let sv = app.synth_fields[idx].stock_value.as_deref().unwrap_or("");
+    let fname = app.selected_synth.as_deref().unwrap_or("").to_string();
+    let is_global_entry = fname.starts_with("[Global ");
+    app.synth_fields[idx].is_diff = if is_global_entry || sv.is_empty() {
+        app.synth_fields[idx].enabled && !app.synth_fields[idx].value.is_empty()
+    } else {
+        app.synth_fields[idx].enabled
+            && !app.synth_fields[idx].value.is_empty()
+            && app.synth_fields[idx].value != sv
+    };
+
+    ui.end_row();
     changed
 }

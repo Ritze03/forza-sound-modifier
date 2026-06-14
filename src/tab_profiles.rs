@@ -28,62 +28,64 @@ pub fn render(app: &mut App, ui: &mut egui::Ui, _ctx: &egui::Context) {
         .resizable(true)
         .show_inside(ui, |ui| {
             egui::ScrollArea::vertical().show(ui, |ui| {
-                // ── Built-in profiles ─────────────────────────────────────────
-                ui.add_space(8.0);
-                ui.colored_label(COL_BUILT_IN, "BUILT-IN PROFILES");
-                ui.add_space(4.0);
+                ui.with_layout(egui::Layout::top_down_justified(egui::Align::LEFT), |ui| {
+                    // ── Built-in profiles ─────────────────────────────────────
+                    ui.add_space(8.0);
+                    ui.colored_label(COL_BUILT_IN, "BUILT-IN PROFILES");
+                    ui.add_space(4.0);
 
-                let bundled_names: Vec<String> = app.bundled_profiles.iter()
-                    .map(|(n, _)| n.clone())
-                    .collect();
-                for name in bundled_names {
-                    let sel = app.selected_bundled.as_deref() == Some(&name);
-                    let label = egui::RichText::new(name.as_str()).color(COL_BUILT_IN);
-                    if ui.selectable_label(sel, label).clicked() {
-                        app.selected_bundled = Some(name.clone());
-                        app.selected_profile = None;
-                        let desc = app.bundled_profiles.iter()
-                            .find(|(n, _)| n == &name)
-                            .map(|(_, p)| p.description.clone())
-                            .unwrap_or_default();
-                        app.profile_desc_buf = desc;
+                    let bundled_names: Vec<String> = app.bundled_profiles.iter()
+                        .map(|(n, _)| n.clone())
+                        .collect();
+                    for name in bundled_names {
+                        let sel = app.selected_bundled.as_deref() == Some(&name);
+                        let label = egui::RichText::new(name.as_str()).color(COL_BUILT_IN);
+                        if ui.selectable_label(sel, label).clicked() {
+                            app.selected_bundled = Some(name.clone());
+                            app.selected_profile = None;
+                            let desc = app.bundled_profiles.iter()
+                                .find(|(n, _)| n == &name)
+                                .map(|(_, p)| p.description.clone())
+                                .unwrap_or_default();
+                            app.profile_desc_buf = desc;
+                        }
                     }
-                }
 
-                ui.add_space(8.0);
-                ui.separator();
+                    ui.add_space(8.0);
+                    ui.separator();
 
-                // ── User profiles ─────────────────────────────────────────────
-                ui.add_space(4.0);
-                ui.colored_label(COL_GRAY, "YOUR PROFILES");
-                ui.add_space(4.0);
+                    // ── User profiles ─────────────────────────────────────────
+                    ui.add_space(4.0);
+                    ui.colored_label(COL_GRAY, "YOUR PROFILES");
+                    ui.add_space(4.0);
 
-                let active = app.config.data.active_profile.clone();
-                let mut names: Vec<String> = app.config.profiles.keys().cloned().collect();
-                names.sort();
-                for name in names {
-                    let is_active = name == active;
-                    let sel = app.selected_profile.as_deref() == Some(&name);
-                    let label = if is_active {
-                        egui::RichText::new(name.as_str()).color(COL_GREEN).strong()
-                    } else {
-                        egui::RichText::new(name.as_str())
-                    };
-                    if ui.selectable_label(sel, label).clicked() {
-                        if app.selected_profile.as_deref() != Some(&name) {
-                            app.selected_profile = Some(name.clone());
-                            app.selected_bundled = None;
-                            if let Some(p) = app.config.profiles.get(&name) {
-                                app.profile_name_buf = name.clone();
-                                app.profile_desc_buf = p.description.clone();
+                    let active = app.config.data.active_profile.clone();
+                    let mut names: Vec<String> = app.config.profiles.keys().cloned().collect();
+                    names.sort();
+                    for name in names {
+                        let is_active = name == active;
+                        let sel = app.selected_profile.as_deref() == Some(&name);
+                        let label = if is_active {
+                            egui::RichText::new(name.as_str()).color(COL_GREEN).strong()
+                        } else {
+                            egui::RichText::new(name.as_str())
+                        };
+                        if ui.selectable_label(sel, label).clicked() {
+                            if app.selected_profile.as_deref() != Some(&name) {
+                                app.selected_profile = Some(name.clone());
+                                app.selected_bundled = None;
+                                if let Some(p) = app.config.profiles.get(&name) {
+                                    app.profile_name_buf = name.clone();
+                                    app.profile_desc_buf = p.description.clone();
+                                }
                             }
                         }
                     }
-                }
+                });
             });
 
             ui.add_space(8.0);
-            ui.horizontal(|ui| {
+            let row = ui.horizontal(|ui| {
                 if ui.add(egui::Button::new("+ New")
                     .fill(egui::Color32::from_rgb(26, 58, 42))).clicked()
                 {
@@ -110,8 +112,11 @@ pub fn render(app: &mut App, ui: &mut egui::Ui, _ctx: &egui::Context) {
                     }
                 });
             });
+            let row_width = row.response.rect.width();
             ui.add_space(4.0);
-            if ui.button("Open Profiles Folder").clicked() {
+            if ui.add(egui::Button::new("Open Profiles Folder")
+                .min_size(egui::vec2(row_width, 0.0))).clicked()
+            {
                 let dir = crate::config::profiles_dir();
                 std::fs::create_dir_all(&dir).ok();
                 opener::open(&dir).ok();
