@@ -46,6 +46,12 @@ pub struct ConfigData {
     pub reverb_overrides: HashMap<String, f64>,
     #[serde(default)]
     pub active_profile: String,
+    #[serde(default)]
+    pub language: crate::i18n::Language,
+    #[serde(default)]
+    pub translate_params: bool,
+    #[serde(default)]
+    pub human_readable_values: bool,
 }
 
 fn default_game_path() -> String {

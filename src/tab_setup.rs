@@ -1,17 +1,59 @@
 use crate::app::{App, Dialog, ConfirmAction};
+use crate::i18n::Language;
 
 pub fn render(app: &mut App, ui: &mut egui::Ui) {
     egui::ScrollArea::vertical().show(ui, |ui| {
         ui.add_space(16.0);
 
+        // ── Language & Display ────────────────────────────────────────────────
+        egui::Frame::group(ui.style()).show(ui, |ui| {
+            ui.heading(app.t("Language & Display"));
+            ui.add_space(6.0);
+
+            ui.horizontal(|ui| {
+                ui.label(app.t("Language"));
+                ui.add_space(8.0);
+                egui::ComboBox::from_id_salt("language_select")
+                    .selected_text(app.config.data.language.label())
+                    .width(120.0)
+                    .show_ui(ui, |ui| {
+                        for lang in [Language::English, Language::German] {
+                            if ui.selectable_value(
+                                &mut app.config.data.language,
+                                lang,
+                                lang.label(),
+                            ).changed() {
+                                app.config.save();
+                            }
+                        }
+                    });
+            });
+
+            ui.add_space(4.0);
+
+            let mut tp = app.config.data.translate_params;
+            if ui.checkbox(&mut tp, app.t("Translate parameter names")).changed() {
+                app.config.data.translate_params = tp;
+                app.config.save();
+            }
+
+            let mut hr = app.config.data.human_readable_values;
+            if ui.checkbox(&mut hr, app.t("Human-readable values")).changed() {
+                app.config.data.human_readable_values = hr;
+                app.config.save();
+            }
+        });
+
+        ui.add_space(12.0);
+
         // ── Game path ─────────────────────────────────────────────────────────
         egui::Frame::group(ui.style()).show(ui, |ui| {
-            ui.heading("Folder Selection");
+            ui.heading(app.t("Folder Selection"));
             ui.add_space(6.0);
             ui.horizontal(|ui| {
-                ui.label("Forza Horizon 6 Directory:");
+                ui.label(app.t("Forza Horizon 6 Directory:"));
                 ui.add_space(4.0);
-                let btn_width = 70.0;
+                let btn_width = 100.0;
                 let spacing = ui.spacing().item_spacing.x;
                 let text_width = ui.available_width() - btn_width - spacing;
                 let resp = ui.add(
@@ -24,7 +66,7 @@ pub fn render(app: &mut App, ui: &mut egui::Ui) {
                     app.refresh_scan();
                     app.load_misc_from_config();
                 }
-                if ui.add(egui::Button::new("Browse…")
+                if ui.add(egui::Button::new(app.t("Browse…"))
                     .min_size(egui::vec2(btn_width, 0.0))).clicked()
                 {
                     if let Some(path) = rfd::FileDialog::new().pick_folder() {
@@ -42,7 +84,7 @@ pub fn render(app: &mut App, ui: &mut egui::Ui) {
 
         // ── Backup status ─────────────────────────────────────────────────────
         egui::Frame::group(ui.style()).show(ui, |ui| {
-            ui.heading("Backup & Restore");
+            ui.heading(app.t("Backup & Restore"));
             ui.add_space(4.0);
 
             let color = if app.backup_exists {
@@ -50,18 +92,18 @@ pub fn render(app: &mut App, ui: &mut egui::Ui) {
             } else {
                 crate::app::COL_RED
             };
-            ui.colored_label(color, format!("Backup Status: {}", app.backup_status_msg));
+            ui.colored_label(color, format!("{} {}", app.t("Backup Status:"), app.backup_status_msg));
 
             ui.add_space(6.0);
-            ui.label(egui::RichText::new(
+            ui.label(egui::RichText::new(app.t(
                 "The tool reads from a safe Backup folder ('media/Audio_Backup') and applies \
                  modifications to the active game folder. This backup copies only .xml config files, \
                  avoiding gigabytes of audio banks."
-            ).color(crate::app::COL_GRAY).size(11.0));
+            )).color(crate::app::COL_GRAY).size(11.0));
 
             ui.add_space(8.0);
             ui.horizontal(|ui| {
-                if ui.add(egui::Button::new("Create / Refresh Backup")
+                if ui.add(egui::Button::new(app.t("Create / Refresh Backup"))
                     .fill(egui::Color32::from_rgb(40, 80, 40)))
                     .clicked()
                 {
@@ -83,7 +125,7 @@ pub fn render(app: &mut App, ui: &mut egui::Ui) {
                 }
 
                 ui.add_enabled_ui(app.backup_exists, |ui| {
-                    if ui.add(egui::Button::new("Restore Original Stock Files")
+                    if ui.add(egui::Button::new(app.t("Restore Original Stock Files"))
                         .fill(egui::Color32::from_rgb(100, 30, 30)))
                         .clicked()
                     {
@@ -101,19 +143,18 @@ pub fn render(app: &mut App, ui: &mut egui::Ui) {
 
         // ── Instructions ──────────────────────────────────────────────────────
         egui::Frame::group(ui.style()).show(ui, |ui| {
-            ui.heading("Usage Instructions");
+            ui.heading(app.t("Usage Instructions"));
             ui.add_space(4.0);
-            for (_, line) in [
+            for line in &[
                 "1. Select your ForzaHorizon6 game path above.",
                 "2. Click 'Create/Refresh Backup' to safe-keep original files (required before applying edits).",
                 "3. Customize sound profiles globally or per-car under the Car Overrides tab.",
                 "4. Fine-tune class synthesizers under Class Overrides.",
                 "5. Adjust backfire and blur rim limits under Miscellaneous.",
                 "6. Click the green 'Apply Mod Profile' button at the top-right to write overrides to the game.",
-            ].iter().enumerate() {
-                ui.label(*line);
+            ] {
+                ui.label(app.t(*line));
             }
         });
     });
 }
-

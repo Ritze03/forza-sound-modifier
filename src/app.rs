@@ -3,6 +3,7 @@ use egui::Color32;
 
 use crate::config::{Config, now_iso};
 use crate::engine::{CarEntry, Engine, ScrapedOptions};
+use crate::i18n::{self, Language};
 
 // ── Tab enum ──────────────────────────────────────────────────────────────────
 
@@ -455,6 +456,32 @@ impl App {
             data::options_for_key(key).iter().map(|s| s.to_string()).collect()
         }
     }
+
+    pub fn lang(&self) -> Language { self.config.data.language }
+
+    pub fn t(&self, key: &str) -> &'static str {
+        i18n::tr(self.lang(), key)
+    }
+
+    pub fn tr_param(&self, name: &str) -> &'static str {
+        if self.config.data.translate_params {
+            i18n::tr_param(self.lang(), name)
+        } else {
+            name
+        }
+    }
+
+    pub fn disp_val(&self, raw: &str) -> String {
+        if self.config.data.human_readable_values {
+            i18n::humanize(self.lang(), raw)
+        } else {
+            raw.to_string()
+        }
+    }
+
+    pub fn stock_label(&self, val: &str) -> String {
+        format!("{}{}", self.t("Stock: "), self.disp_val(val))
+    }
 }
 
 impl eframe::App for App {
@@ -472,7 +499,7 @@ impl eframe::App for App {
                 ui.heading("Forza Horizon 6 Sound Modifier");
                 ui.add_space(12.0);
                 // Tab buttons
-                for (tab, label) in &[
+                for (tab, key) in &[
                     (Tab::Setup,         "Setup"),
                     (Tab::CarOverrides,  "Car Overrides"),
                     (Tab::ClassOverrides,"Class Overrides"),
@@ -483,13 +510,13 @@ impl eframe::App for App {
                     let selected = self.active_tab == *tab;
                     let enabled = selected || self.backup_exists || *tab == Tab::Setup || *tab == Tab::Profiles;
                     ui.add_enabled_ui(enabled, |ui| {
-                        if ui.selectable_label(selected, *label).clicked() {
+                        if ui.selectable_label(selected, self.t(*key)).clicked() {
                             self.active_tab = *tab;
                         }
                     });
                 }
                 ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                    let btn = egui::Button::new("Apply Mod Profile")
+                    let btn = egui::Button::new(self.t("Apply Mod Profile"))
                         .fill(Color32::from_rgb(34, 139, 34));
                     if ui.add(btn).clicked() {
                         if !self.backup_exists {
@@ -563,7 +590,7 @@ fn show_dialog(app: &mut App, ctx: &egui::Context) {
                 .show(ctx, |ui| {
                     ui.label(message.as_str());
                     ui.add_space(8.0);
-                    if ui.button("OK").clicked() { outcome = Outcome::Close; }
+                    if ui.button(app.t("OK")).clicked() { outcome = Outcome::Close; }
                 });
         }
         Dialog::Confirm { ref title, ref message, .. } => {
@@ -576,8 +603,8 @@ fn show_dialog(app: &mut App, ctx: &egui::Context) {
                     ui.label(m.as_str());
                     ui.add_space(8.0);
                     ui.horizontal(|ui| {
-                        if ui.button("Yes").clicked() { outcome = Outcome::Confirm; }
-                        if ui.button("No").clicked()  { outcome = Outcome::Close; }
+                        if ui.button(app.t("Yes")).clicked() { outcome = Outcome::Confirm; }
+                        if ui.button(app.t("No")).clicked()  { outcome = Outcome::Close; }
                     });
                 });
         }
@@ -591,14 +618,13 @@ fn show_dialog(app: &mut App, ctx: &egui::Context) {
                 .show(ctx, |ui| {
                     ui.label(p.as_str());
                     let resp = ui.text_edit_singleline(value);
-                    // Submit on Enter
                     if resp.lost_focus() && ui.input(|i| i.key_pressed(egui::Key::Enter)) {
                         outcome = Outcome::TextOk;
                     }
                     ui.add_space(8.0);
                     ui.horizontal(|ui| {
-                        if ui.button("OK").clicked()     { outcome = Outcome::TextOk; }
-                        if ui.button("Cancel").clicked() { outcome = Outcome::Close; }
+                        if ui.button(app.t("OK")).clicked()     { outcome = Outcome::TextOk; }
+                        if ui.button(app.t("Cancel")).clicked() { outcome = Outcome::Close; }
                     });
                 });
         }
@@ -896,19 +922,30 @@ pub const COL_GREEN: Color32    = Color32::from_rgb(100, 220, 100);
 pub const COL_RED: Color32      = Color32::from_rgb(220,  80,  80);
 pub const COL_BLUE_HINT: Color32= Color32::from_rgb(104, 136, 170);
 
-/// A combo box backed by a `String`. Returns true if the value changed.
-pub fn combo(ui: &mut egui::Ui, id: &str, value: &mut String, options: &[String]) -> bool {
+/// Combo box with a custom display function for each option.
+/// The display function is also called with `""` to get the "(none)" label.
+pub fn combo_disp(
+    ui: &mut egui::Ui,
+    id: &str,
+    value: &mut String,
+    options: &[String],
+    display: impl Fn(&str) -> String,
+) -> bool {
     let mut changed = false;
+    let selected_text = display(value);
     egui::ComboBox::from_id_salt(id)
-        .selected_text(value.as_str())
+        .selected_text(selected_text)
         .width(200.0)
         .show_ui(ui, |ui| {
-            ui.selectable_value(value, String::new(), "(none)");
+            if ui.selectable_value(value, String::new(), display("")).changed() { changed = true; }
             for opt in options {
-                if ui.selectable_value(value, opt.clone(), opt).changed() {
-                    changed = true;
-                }
+                if ui.selectable_value(value, opt.clone(), display(opt)).changed() { changed = true; }
             }
         });
     changed
+}
+
+/// A combo box backed by a `String`. Returns true if the value changed.
+pub fn combo(ui: &mut egui::Ui, id: &str, value: &mut String, options: &[String]) -> bool {
+    combo_disp(ui, id, value, options, |v| if v.is_empty() { "(none)".to_string() } else { v.to_string() })
 }

@@ -175,7 +175,6 @@ fn render_synth_grid(app: &mut App, ui: &mut egui::Ui, indices: &[usize], id: &s
     egui::Grid::new(id)
         .num_columns(4)
         .spacing([12.0, 4.0])
-        .striped(true)
         .show(ui, |ui| {
             ui.label(egui::RichText::new("Attribute").weak());
             ui.label(egui::RichText::new("Stock Value").weak());
