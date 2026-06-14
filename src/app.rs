@@ -468,25 +468,6 @@ impl App {
         i18n::tr(self.lang(), key)
     }
 
-    pub fn tr_param(&self, name: &'static str) -> &'static str {
-        if self.config.data.translate_params {
-            i18n::tr_param(self.lang(), name)
-        } else {
-            name
-        }
-    }
-
-    pub fn disp_val(&self, raw: &str) -> String {
-        if self.config.data.human_readable_values {
-            i18n::humanize(self.lang(), raw)
-        } else {
-            raw.to_string()
-        }
-    }
-
-    pub fn stock_label(&self, val: &str) -> String {
-        format!("{}{}", self.t("Stock: "), self.disp_val(val))
-    }
 }
 
 impl eframe::App for App {
@@ -982,7 +963,3 @@ pub fn combo_disp(
     changed
 }
 
-/// A combo box backed by a `String`. Returns true if the value changed.
-pub fn combo(ui: &mut egui::Ui, id: &str, value: &mut String, options: &[String]) -> bool {
-    combo_disp(ui, id, value, options, |v| if v.is_empty() { "(none)".to_string() } else { v.to_string() })
-}
