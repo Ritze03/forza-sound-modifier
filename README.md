@@ -1,19 +1,23 @@
 # Forza Sound Modifier
 
-## Install
+A desktop app for tweaking the sound engine of Forza Horizon 6 — adjust engine notes, backfire behavior, reverb, and more without touching game files by hand.
 
-```powershell
-cd s:\forza-sound-modifier
-python -m venv .venv
-.venv\Scripts\activate
-python -m pip install --upgrade pip
-pip install .
-```
+## Getting Started
 
-### Run
+1. Launch the app.
+2. Go to the **Setup** tab and point it at your Forza Horizon 6 install folder.
+3. Create a backup when prompted — this is required before any changes can be applied.
+4. Tweak settings across the tabs, then hit **Apply Mod Profile** in the top-right.
 
-```powershell
-forza-sound-modifier
-```
+To undo everything, use **Restore Original Stock Files** on the Setup tab.
 
-If you prefer to launch the script directly, `python sound_modifier_gui.py` still works after installation.
+## Tabs
+
+| Tab | What it does |
+|-----|-------------|
+| Setup | Configure paths, create/restore backup |
+| Car Overrides | Per-car sound settings |
+| Class Overrides | Per-class synthesizer settings |
+| Miscellaneous | Global sound parameters |
+| Reverb | Reverb multipliers and offsets |
+| Profiles | Save and load named mod profiles |
