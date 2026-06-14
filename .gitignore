@@ -10,6 +10,10 @@
 !src/
 !src/**
 
+# Bundled assets (fonts, etc.)
+!assets/
+!assets/**
+
 # Bundled profiles
 !profiles/
 !profiles/**
