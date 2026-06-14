@@ -935,7 +935,7 @@ pub fn combo_disp(
     let selected_text = display(value);
     egui::ComboBox::from_id_salt(id)
         .selected_text(selected_text)
-        .width(200.0)
+        .width(280.0)
         .show_ui(ui, |ui| {
             if ui.selectable_value(value, String::new(), display("")).changed() { changed = true; }
             for opt in options {

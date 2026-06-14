@@ -19,32 +19,34 @@ pub fn render(app: &mut App, ui: &mut egui::Ui, _ctx: &egui::Context) {
 
             let search = app.car_search.to_lowercase();
             egui::ScrollArea::vertical().show(ui, |ui| {
-                // Global overrides entry
-                let selected = app.selected_car.as_deref() == Some("[Global Overrides]");
-                if ui.selectable_label(selected, "[Global Overrides]").clicked() {
-                    app.selected_car = Some("[Global Overrides]".into());
-                }
-                ui.separator();
-
-                // Car list
-                let car_ids: Vec<String> = app.car_list.iter()
-                    .filter(|c| search.is_empty() || c.id.to_lowercase().contains(&search))
-                    .map(|c| c.id.clone())
-                    .collect();
-
-                for car_id in car_ids {
-                    let sel = app.selected_car.as_deref() == Some(&car_id);
-                    let has_override = app.config.data.car_overrides.contains_key(&car_id);
-                    let label = if has_override {
-                        egui::RichText::new(format!("● {}", car_id)).color(COL_GOLD)
-                    } else {
-                        egui::RichText::new(&car_id)
-                    };
-                    if ui.selectable_label(sel, label).clicked() {
-                        app.selected_car = Some(car_id.clone());
-                        app.loaded_car_id = None;
+                ui.with_layout(egui::Layout::top_down_justified(egui::Align::LEFT), |ui| {
+                    // Global overrides entry
+                    let selected = app.selected_car.as_deref() == Some("[Global Overrides]");
+                    if ui.selectable_label(selected, "[Global Overrides]").clicked() {
+                        app.selected_car = Some("[Global Overrides]".into());
                     }
-                }
+                    ui.separator();
+
+                    // Car list
+                    let car_ids: Vec<String> = app.car_list.iter()
+                        .filter(|c| search.is_empty() || c.id.to_lowercase().contains(&search))
+                        .map(|c| c.id.clone())
+                        .collect();
+
+                    for car_id in car_ids {
+                        let sel = app.selected_car.as_deref() == Some(&car_id);
+                        let has_override = app.config.data.car_overrides.contains_key(&car_id);
+                        let label = if has_override {
+                            egui::RichText::new(format!("● {}", car_id)).color(COL_GOLD)
+                        } else {
+                            egui::RichText::new(&car_id)
+                        };
+                        if ui.selectable_label(sel, label).clicked() {
+                            app.selected_car = Some(car_id.clone());
+                            app.loaded_car_id = None;
+                        }
+                    }
+                });
             });
         });
 
@@ -87,6 +89,7 @@ fn render_global(app: &mut App, ui: &mut egui::Ui) {
 
     egui::ScrollArea::vertical().show(ui, |ui| {
         egui::Frame::group(ui.style()).show(ui, |ui| {
+            ui.set_min_width(ui.available_width());
             ui.label(egui::RichText::new(app.t("Core Synthesizer & RPM Channels")).strong());
             ui.add_space(4.0);
             render_global_grid(app, ui, &[
@@ -100,6 +103,7 @@ fn render_global(app: &mut App, ui: &mut egui::Ui) {
         ui.add_space(8.0);
 
         egui::Frame::group(ui.style()).show(ui, |ui| {
+            ui.set_min_width(ui.available_width());
             ui.label(egui::RichText::new(app.t("Induction & Gear Whine Profiles")).strong());
             ui.add_space(4.0);
             render_global_grid(app, ui, &[
@@ -110,6 +114,7 @@ fn render_global(app: &mut App, ui: &mut egui::Ui) {
         ui.add_space(8.0);
 
         egui::Frame::group(ui.style()).show(ui, |ui| {
+            ui.set_min_width(ui.available_width());
             ui.label(egui::RichText::new(app.t("Acoustic Sound Properties")).strong());
             ui.add_space(4.0);
             render_global_grid(app, ui, &[
@@ -135,9 +140,10 @@ fn render_global_grid(app: &mut App, ui: &mut egui::Ui, keys: &[&'static str]) {
         .num_columns(3)
         .spacing([8.0, 4.0])
         .show(ui, |ui| {
-            ui.label(egui::RichText::new(i18n::tr(lang, "Parameter")).weak());
+            let h = ui.text_style_height(&egui::TextStyle::Body);
+            ui.add_sized([180.0, h], egui::Label::new(egui::RichText::new(i18n::tr(lang, "Parameter")).weak()));
             ui.label(egui::RichText::new(i18n::tr(lang, "Override?")).weak());
-            ui.label(egui::RichText::new(i18n::tr(lang, "Value")).weak());
+            ui.add_sized([280.0, h], egui::Label::new(egui::RichText::new(i18n::tr(lang, "Value")).weak()));
             ui.end_row();
 
             for key in keys {
@@ -154,7 +160,7 @@ fn render_global_grid(app: &mut App, ui: &mut egui::Ui, keys: &[&'static str]) {
                     ui.colored_label(label_color, display_name);
 
                     let mut en = app.global_fields[idx].1.enabled;
-                    if ui.checkbox(&mut en, "").changed() {
+                    if ui.centered_and_justified(|ui| ui.checkbox(&mut en, "")).inner.changed() {
                         app.global_fields[idx].1.enabled = en;
                         if !en { app.global_fields[idx].1.value.clear(); }
                         changed = true;
@@ -164,9 +170,9 @@ fn render_global_grid(app: &mut App, ui: &mut egui::Ui, keys: &[&'static str]) {
                         let options = app.options_for_key(key);
                         let val = &mut app.global_fields[idx].1.value;
                         let field_changed = if is_float {
-                            ui.add(egui::TextEdit::singleline(val).desired_width(120.0)).changed()
+                            ui.add(egui::TextEdit::singleline(val).desired_width(280.0)).changed()
                         } else if options.is_empty() {
-                            ui.add(egui::TextEdit::singleline(val).desired_width(200.0)).changed()
+                            ui.add(egui::TextEdit::singleline(val).desired_width(280.0)).changed()
                         } else {
                             let before = val.clone();
                             crate::app::combo_disp(ui, &format!("global_combo_{}", key), val, &options, &disp);
@@ -207,6 +213,7 @@ fn render_car(app: &mut App, ui: &mut egui::Ui, car_id: &str) {
 
     egui::ScrollArea::vertical().show(ui, |ui| {
         egui::Frame::group(ui.style()).show(ui, |ui| {
+            ui.set_min_width(ui.available_width());
             ui.label(egui::RichText::new(app.t("Core Sound Channels")).strong());
             ui.add_space(4.0);
             render_car_grid(app, ui, car_id, &[
@@ -220,6 +227,7 @@ fn render_car(app: &mut App, ui: &mut egui::Ui, car_id: &str) {
         ui.add_space(8.0);
 
         egui::Frame::group(ui.style()).show(ui, |ui| {
+            ui.set_min_width(ui.available_width());
             ui.label(egui::RichText::new(app.t("Induction & Gear Whine Profiles")).strong());
             ui.add_space(4.0);
             render_car_grid(app, ui, car_id, &[
@@ -230,6 +238,7 @@ fn render_car(app: &mut App, ui: &mut egui::Ui, car_id: &str) {
         ui.add_space(8.0);
 
         egui::Frame::group(ui.style()).show(ui, |ui| {
+            ui.set_min_width(ui.available_width());
             ui.label(egui::RichText::new(app.t("Acoustic Sound Properties")).strong());
             ui.add_space(4.0);
             render_car_grid(app, ui, car_id, &[
@@ -255,10 +264,11 @@ fn render_car_grid(app: &mut App, ui: &mut egui::Ui, car_id: &str, keys: &[&'sta
         .num_columns(5)
         .spacing([8.0, 4.0])
         .show(ui, |ui| {
-            ui.label(egui::RichText::new(i18n::tr(lang, "Parameter")).weak());
-            ui.label(egui::RichText::new(i18n::tr(lang, "Stock Value")).weak());
+            let h = ui.text_style_height(&egui::TextStyle::Body);
+            ui.add_sized([180.0, h], egui::Label::new(egui::RichText::new(i18n::tr(lang, "Parameter")).weak()));
+            ui.add_sized([250.0, h], egui::Label::new(egui::RichText::new(i18n::tr(lang, "Stock Value")).weak()));
             ui.label(egui::RichText::new(i18n::tr(lang, "Override?")).weak());
-            ui.label(egui::RichText::new(i18n::tr(lang, "New Value")).weak());
+            ui.add_sized([280.0, h], egui::Label::new(egui::RichText::new(i18n::tr(lang, "New Value")).weak()));
             ui.label(egui::RichText::new(i18n::tr(lang, "Link")).weak());
             ui.end_row();
 
@@ -287,9 +297,9 @@ fn render_car_grid(app: &mut App, ui: &mut egui::Ui, car_id: &str, keys: &[&'sta
                     let stock_color = if is_diff { COL_GOLD } else { COL_GRAY };
                     ui.colored_label(stock_color, format!("{}{}", i18n::tr(lang, "Stock: "), stock_disp));
 
-                    // Override checkbox
+                    // Override checkbox - centered under header
                     let mut en = app.car_fields[idx].1.enabled;
-                    if ui.checkbox(&mut en, "").changed() {
+                    if ui.centered_and_justified(|ui| ui.checkbox(&mut en, "")).inner.changed() {
                         app.car_fields[idx].1.enabled = en;
                         if !en { app.car_fields[idx].1.value.clear(); }
                         let cid = car_id.to_string();
@@ -302,9 +312,9 @@ fn render_car_grid(app: &mut App, ui: &mut egui::Ui, car_id: &str, keys: &[&'sta
                         let options = app.options_for_key(key);
                         let val = &mut app.car_fields[idx].1.value;
                         let changed = if is_float {
-                            ui.add(egui::TextEdit::singleline(val).desired_width(120.0)).changed()
+                            ui.add(egui::TextEdit::singleline(val).desired_width(280.0)).changed()
                         } else if options.is_empty() {
-                            ui.add(egui::TextEdit::singleline(val).desired_width(200.0)).changed()
+                            ui.add(egui::TextEdit::singleline(val).desired_width(280.0)).changed()
                         } else {
                             let before = val.clone();
                             crate::app::combo_disp(ui, &format!("car_combo_{}_{}", car_id, key), val, &options, &disp);

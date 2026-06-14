@@ -1,7 +1,10 @@
 use crate::app::{App, Dialog, ConfirmAction, COL_GOLD, COL_GRAY, COL_BLUE_HINT};
 use crate::data::GLOBAL_CATEGORIES;
+use crate::i18n;
 
 pub fn render(app: &mut App, ui: &mut egui::Ui, _ctx: &egui::Context) {
+    let lang = app.config.data.language;
+
     // Left panel: synth list
     egui::SidePanel::left("synth_list_panel")
         .min_width(220.0)
@@ -9,9 +12,10 @@ pub fn render(app: &mut App, ui: &mut egui::Ui, _ctx: &egui::Context) {
         .resizable(true)
         .show_inside(ui, |ui| {
             ui.add_space(4.0);
+            let hint = i18n::tr(lang, "Search synthesizers…");
             let resp = ui.add(
                 egui::TextEdit::singleline(&mut app.synth_search)
-                    .hint_text("Search synthesizers…")
+                    .hint_text(hint)
                     .desired_width(f32::INFINITY)
             );
             if resp.changed() { /* filter is live */ }
@@ -19,44 +23,47 @@ pub fn render(app: &mut App, ui: &mut egui::Ui, _ctx: &egui::Context) {
 
             let search = app.synth_search.to_lowercase();
             egui::ScrollArea::vertical().show(ui, |ui| {
-                // Global category entries (always visible)
-                for (cat, _, _) in GLOBAL_CATEGORIES {
-                    let sel = app.selected_synth.as_deref() == Some(cat);
-                    let has_ov = app.config.data.synth_overrides.contains_key(*cat);
-                    let label = if has_ov {
-                        egui::RichText::new(format!("● {}", cat)).color(COL_GOLD)
-                    } else {
-                        egui::RichText::new(*cat).color(COL_BLUE_HINT)
-                    };
-                    if ui.selectable_label(sel, label).clicked() {
-                        if app.selected_synth.as_deref() != Some(cat) {
-                            app.selected_synth = Some(cat.to_string());
-                            app.loaded_synth = None;
+                ui.with_layout(egui::Layout::top_down_justified(egui::Align::LEFT), |ui| {
+                    // Global category entries (always visible)
+                    for (cat, _, _) in GLOBAL_CATEGORIES {
+                        let sel = app.selected_synth.as_deref() == Some(cat);
+                        let has_ov = app.config.data.synth_overrides.contains_key(*cat);
+                        let display = i18n::tr_dyn(lang, *cat);
+                        let label = if has_ov {
+                            egui::RichText::new(format!("● {}", display)).color(COL_GOLD)
+                        } else {
+                            egui::RichText::new(display).color(COL_BLUE_HINT)
+                        };
+                        if ui.selectable_label(sel, label).clicked() {
+                            if app.selected_synth.as_deref() != Some(cat) {
+                                app.selected_synth = Some(cat.to_string());
+                                app.loaded_synth = None;
+                            }
                         }
                     }
-                }
-                ui.separator();
+                    ui.separator();
 
-                // Individual synth files
-                let files: Vec<String> = app.synth_list.iter()
-                    .filter(|f| search.is_empty() || f.to_lowercase().contains(&search))
-                    .cloned()
-                    .collect();
-                for fname in files {
-                    let sel = app.selected_synth.as_deref() == Some(&fname);
-                    let has_ov = app.config.data.synth_overrides.contains_key(&fname);
-                    let label = if has_ov {
-                        egui::RichText::new(format!("● {}", fname)).color(COL_GOLD)
-                    } else {
-                        egui::RichText::new(&fname)
-                    };
-                    if ui.selectable_label(sel, label).clicked() {
-                        if app.selected_synth.as_deref() != Some(&fname) {
-                            app.selected_synth = Some(fname.clone());
-                            app.loaded_synth = None;
+                    // Individual synth files
+                    let files: Vec<String> = app.synth_list.iter()
+                        .filter(|f| search.is_empty() || f.to_lowercase().contains(&search))
+                        .cloned()
+                        .collect();
+                    for fname in files {
+                        let sel = app.selected_synth.as_deref() == Some(&fname);
+                        let has_ov = app.config.data.synth_overrides.contains_key(&fname);
+                        let label = if has_ov {
+                            egui::RichText::new(format!("● {}", fname)).color(COL_GOLD)
+                        } else {
+                            egui::RichText::new(&fname)
+                        };
+                        if ui.selectable_label(sel, label).clicked() {
+                            if app.selected_synth.as_deref() != Some(&fname) {
+                                app.selected_synth = Some(fname.clone());
+                                app.loaded_synth = None;
+                            }
                         }
                     }
-                }
+                });
             });
         });
 
@@ -66,7 +73,7 @@ pub fn render(app: &mut App, ui: &mut egui::Ui, _ctx: &egui::Context) {
             None => {
                 ui.centered_and_justified(|ui| {
                     ui.colored_label(COL_GRAY,
-                        "Select a synthesizer file from the list to modify its parameters.");
+                        i18n::tr(lang, "Select a synthesizer file from the list to modify its parameters."));
                 });
             }
             Some(filename) => {
@@ -80,11 +87,13 @@ pub fn render(app: &mut App, ui: &mut egui::Ui, _ctx: &egui::Context) {
 
 fn render_synth_editor(app: &mut App, ui: &mut egui::Ui, filename: &str) {
     let is_global = filename.starts_with("[Global ");
+    let lang = app.config.data.language;
+    let display_name = i18n::tr_dyn(lang, filename);
 
     ui.horizontal(|ui| {
-        ui.heading(filename);
+        ui.heading(display_name);
         ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-            if ui.add(egui::Button::new("Clear Overrides for This Synth")
+            if ui.add(egui::Button::new(i18n::tr(lang, "Clear Overrides for This Synth"))
                 .fill(egui::Color32::from_rgb(80, 30, 30))).clicked()
             {
                 app.dialog = Some(Dialog::Confirm {
@@ -101,7 +110,7 @@ fn render_synth_editor(app: &mut App, ui: &mut egui::Ui, filename: &str) {
         if let Some((_, file_pat, desc)) = crate::data::GLOBAL_CATEGORIES.iter()
             .find(|(cat, _, _)| *cat == filename)
         {
-            let banner_text = format!("{}  —  {}", file_pat, desc);
+            let banner_text = format!("{}  —  {}", file_pat, i18n::tr_dyn(lang, desc));
             egui::Frame::none()
                 .fill(egui::Color32::from_rgb(30, 42, 58))
                 .inner_margin(egui::Margin::same(8.0))
@@ -123,10 +132,12 @@ fn render_synth_editor(app: &mut App, ui: &mut egui::Ui, filename: &str) {
             .collect();
         if !channel_fields.is_empty() {
             egui::Frame::group(ui.style()).show(ui, |ui| {
+                ui.set_min_width(ui.available_width());
+                let ch_label = i18n::tr(lang, "Channel Volume & RPM Settings");
                 let title = if is_global {
-                    format!("Channel Volume & RPM  —  {}", filename)
+                    format!("{}  —  {}", ch_label, display_name)
                 } else {
-                    "Channel Volume & RPM Settings".into()
+                    ch_label.to_string()
                 };
                 ui.label(egui::RichText::new(title).strong());
                 ui.add_space(4.0);
@@ -142,7 +153,8 @@ fn render_synth_editor(app: &mut App, ui: &mut egui::Ui, filename: &str) {
             .collect();
         if !gc_fields.is_empty() {
             egui::Frame::group(ui.style()).show(ui, |ui| {
-                ui.label(egui::RichText::new("Gear Crack Settings").strong());
+                ui.set_min_width(ui.available_width());
+                ui.label(egui::RichText::new(i18n::tr(lang, "Gear Crack Settings")).strong());
                 ui.add_space(4.0);
                 if render_synth_grid(app, ui, &gc_fields, &format!("synth_gc_{}", filename)) { changed = true; }
             });
@@ -157,7 +169,8 @@ fn render_synth_editor(app: &mut App, ui: &mut egui::Ui, filename: &str) {
             .collect();
         if !adv_fields.is_empty() {
             egui::Frame::group(ui.style()).show(ui, |ui| {
-                ui.label(egui::RichText::new("Advanced Attributes").strong());
+                ui.set_min_width(ui.available_width());
+                ui.label(egui::RichText::new(i18n::tr(lang, "Advanced Attributes")).strong());
                 ui.add_space(4.0);
                 if render_synth_grid(app, ui, &adv_fields, &format!("synth_adv_{}", filename)) { changed = true; }
             });
@@ -172,14 +185,16 @@ fn render_synth_editor(app: &mut App, ui: &mut egui::Ui, filename: &str) {
 
 fn render_synth_grid(app: &mut App, ui: &mut egui::Ui, indices: &[usize], id: &str) -> bool {
     let mut changed = false;
+    let lang = app.config.data.language;
     egui::Grid::new(id)
         .num_columns(4)
         .spacing([12.0, 4.0])
         .show(ui, |ui| {
-            ui.label(egui::RichText::new("Attribute").weak());
-            ui.label(egui::RichText::new("Stock Value").weak());
-            ui.label(egui::RichText::new("Override?").weak());
-            ui.label(egui::RichText::new("Value").weak());
+            let h = ui.text_style_height(&egui::TextStyle::Body);
+            ui.add_sized([180.0, h], egui::Label::new(egui::RichText::new(i18n::tr(lang, "Attribute")).weak()));
+            ui.add_sized([250.0, h], egui::Label::new(egui::RichText::new(i18n::tr(lang, "Stock Value")).weak()));
+            ui.label(egui::RichText::new(i18n::tr(lang, "Override?")).weak());
+            ui.add_sized([280.0, h], egui::Label::new(egui::RichText::new(i18n::tr(lang, "Value")).weak()));
             ui.end_row();
 
             for &idx in indices {
@@ -189,26 +204,30 @@ fn render_synth_grid(app: &mut App, ui: &mut egui::Ui, indices: &[usize], id: &s
     changed
 }
 
-/// Renders one grid row (4 cells) and returns whether anything changed.
 fn render_synth_row(app: &mut App, ui: &mut egui::Ui, idx: usize) -> bool {
     let mut changed = false;
     let field = app.synth_fields[idx].clone();
+    let lang = app.config.data.language;
+    let transp = app.config.data.translate_params;
+    let human = app.config.data.human_readable_values;
 
     // Col 1: Attribute name
     let name_color = if field.is_diff { COL_GOLD } else { egui::Color32::GRAY };
-    ui.colored_label(name_color, &field.attr);
+    let display_attr = if transp { i18n::tr_attr(lang, &field.attr) } else { &field.attr };
+    ui.colored_label(name_color, display_attr);
 
     // Col 2: Stock value
     if let Some(sv) = &field.stock_value {
         let sc = if field.is_diff { COL_GOLD } else { COL_GRAY };
-        ui.colored_label(sc, format!("Stock: {}", sv));
+        let sv_disp = if human { i18n::humanize(lang, sv) } else { sv.clone() };
+        ui.colored_label(sc, format!("{}{}", i18n::tr(lang, "Stock: "), sv_disp));
     } else {
-        ui.colored_label(COL_BLUE_HINT, "(global default)");
+        ui.colored_label(COL_BLUE_HINT, i18n::tr(lang, "(global default)"));
     }
 
-    // Col 3: Override checkbox
+    // Col 3: Override checkbox - centered under header
     let mut en = app.synth_fields[idx].enabled;
-    if ui.checkbox(&mut en, "Override").changed() {
+    if ui.centered_and_justified(|ui| ui.checkbox(&mut en, "")).inner.changed() {
         app.synth_fields[idx].enabled = en;
         if !en { app.synth_fields[idx].value.clear(); }
         changed = true;
@@ -220,7 +239,7 @@ fn render_synth_row(app: &mut App, ui: &mut egui::Ui, idx: usize) -> bool {
             let before = app.synth_fields[idx].value.clone();
             egui::ComboBox::from_id_salt(format!("synth_bool_{}_{}", idx, field.attr))
                 .selected_text(&app.synth_fields[idx].value)
-                .width(100.0)
+                .width(280.0)
                 .show_ui(ui, |ui| {
                     ui.selectable_value(&mut app.synth_fields[idx].value, "True".into(), "True");
                     ui.selectable_value(&mut app.synth_fields[idx].value, "False".into(), "False");
@@ -229,7 +248,7 @@ fn render_synth_row(app: &mut App, ui: &mut egui::Ui, idx: usize) -> bool {
         } else {
             let resp = ui.add(
                 egui::TextEdit::singleline(&mut app.synth_fields[idx].value)
-                    .desired_width(140.0)
+                    .desired_width(280.0)
             );
             if resp.changed() { changed = true; }
         }

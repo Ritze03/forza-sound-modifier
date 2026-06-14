@@ -115,6 +115,48 @@ pub fn tr(lang: Language, key: &'static str) -> &'static str {
     }
 }
 
+/// Translates a synthesizer attribute name (e.g. "MasterVolume") for the class tab.
+/// Returns a borrowed str so it works with runtime (non-static) strings.
+pub fn tr_attr<'a>(lang: Language, name: &'a str) -> &'a str {
+    if lang != Language::German { return name; }
+    match name {
+        "MasterVolume" => "Hauptlautstärke",
+        "MinRPM"       => "Min. Drehzahl",
+        "MaxRPM"       => "Max. Drehzahl",
+        "Volume"       => "Lautstärke",
+        _ => name,
+    }
+}
+
+/// Translates dynamic strings (category names, descriptions) that aren't compile-time literals.
+/// Returns a borrowed str so it works with runtime String values.
+pub fn tr_dyn<'a>(lang: Language, key: &'a str) -> &'a str {
+    if lang != Language::German { return key; }
+    match key {
+        // Global category names (used as headings and list labels)
+        "[Global Engine]"        => "[Globaler Motor]",
+        "[Global Exhaust]"       => "[Globaler Auspuff]",
+        "[Global Intake]"        => "[Globale Ansaugung]",
+        "[Global Transmission]"  => "[Globales Getriebe]",
+        "[Global Turbo]"         => "[Globaler Turbo]",
+        "[Global Supercharger]"  => "[Globaler Kompressor]",
+        // Global category descriptions
+        "Sets Channel volume/RPM for ALL engine synth files."
+            => "Stellt Kanal-Lautstärke/Drehzahl für ALLE Motor-Synthesizer ein.",
+        "Sets Channel volume/RPM for ALL exhaust synth files."
+            => "Stellt Kanal-Lautstärke/Drehzahl für ALLE Auspuff-Synthesizer ein.",
+        "Sets Channel volume/RPM for ALL intake synth files."
+            => "Stellt Kanal-Lautstärke/Drehzahl für ALLE Ansaugungs-Synthesizer ein.",
+        "Sets Channel volume/RPM for ALL transmission synth files."
+            => "Stellt Kanal-Lautstärke/Drehzahl für ALLE Getriebe-Synthesizer ein.",
+        "Sets Channel volume/RPM for ALL turbocharger synth files."
+            => "Stellt Kanal-Lautstärke/Drehzahl für ALLE Turbo-Synthesizer ein.",
+        "Sets Channel volume/RPM for ALL supercharger synth files."
+            => "Stellt Kanal-Lautstärke/Drehzahl für ALLE Kompressor-Synthesizer ein.",
+        _ => key,
+    }
+}
+
 /// Translates a parameter display name (e.g. "Engine (Stock)") when translate_params is on.
 pub fn tr_param(lang: Language, name: &'static str) -> &'static str {
     if lang != Language::German { return name; }

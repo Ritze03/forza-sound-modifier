@@ -5,49 +5,9 @@ pub fn render(app: &mut App, ui: &mut egui::Ui) {
     egui::ScrollArea::vertical().show(ui, |ui| {
         ui.add_space(16.0);
 
-        // ── Language & Display ────────────────────────────────────────────────
-        egui::Frame::group(ui.style()).show(ui, |ui| {
-            ui.heading(app.t("Language & Display"));
-            ui.add_space(6.0);
-
-            ui.horizontal(|ui| {
-                ui.label(app.t("Language"));
-                ui.add_space(8.0);
-                egui::ComboBox::from_id_salt("language_select")
-                    .selected_text(app.config.data.language.label())
-                    .width(120.0)
-                    .show_ui(ui, |ui| {
-                        for lang in [Language::English, Language::German] {
-                            if ui.selectable_value(
-                                &mut app.config.data.language,
-                                lang,
-                                lang.label(),
-                            ).changed() {
-                                app.config.save();
-                            }
-                        }
-                    });
-            });
-
-            ui.add_space(4.0);
-
-            let mut tp = app.config.data.translate_params;
-            if ui.checkbox(&mut tp, app.t("Translate parameter names")).changed() {
-                app.config.data.translate_params = tp;
-                app.config.save();
-            }
-
-            let mut hr = app.config.data.human_readable_values;
-            if ui.checkbox(&mut hr, app.t("Human-readable values")).changed() {
-                app.config.data.human_readable_values = hr;
-                app.config.save();
-            }
-        });
-
-        ui.add_space(12.0);
-
         // ── Game path ─────────────────────────────────────────────────────────
         egui::Frame::group(ui.style()).show(ui, |ui| {
+            ui.set_min_width(ui.available_width());
             ui.heading(app.t("Folder Selection"));
             ui.add_space(6.0);
             ui.horizontal(|ui| {
@@ -82,8 +42,9 @@ pub fn render(app: &mut App, ui: &mut egui::Ui) {
 
         ui.add_space(12.0);
 
-        // ── Backup status ─────────────────────────────────────────────────────
+        // ── Backup & Restore ──────────────────────────────────────────────────
         egui::Frame::group(ui.style()).show(ui, |ui| {
+            ui.set_min_width(ui.available_width());
             ui.heading(app.t("Backup & Restore"));
             ui.add_space(4.0);
 
@@ -141,8 +102,51 @@ pub fn render(app: &mut App, ui: &mut egui::Ui) {
 
         ui.add_space(12.0);
 
+        // ── Language & Display ────────────────────────────────────────────────
+        egui::Frame::group(ui.style()).show(ui, |ui| {
+            ui.set_min_width(ui.available_width());
+            ui.heading(app.t("Language & Display"));
+            ui.add_space(6.0);
+
+            ui.horizontal(|ui| {
+                ui.label(app.t("Language"));
+                ui.add_space(8.0);
+                egui::ComboBox::from_id_salt("language_select")
+                    .selected_text(app.config.data.language.label())
+                    .width(120.0)
+                    .show_ui(ui, |ui| {
+                        for lang in [Language::English, Language::German] {
+                            if ui.selectable_value(
+                                &mut app.config.data.language,
+                                lang,
+                                lang.label(),
+                            ).changed() {
+                                app.config.save();
+                            }
+                        }
+                    });
+            });
+
+            ui.add_space(4.0);
+
+            let mut tp = app.config.data.translate_params;
+            if ui.checkbox(&mut tp, app.t("Translate parameter names")).changed() {
+                app.config.data.translate_params = tp;
+                app.config.save();
+            }
+
+            let mut hr = app.config.data.human_readable_values;
+            if ui.checkbox(&mut hr, app.t("Human-readable values")).changed() {
+                app.config.data.human_readable_values = hr;
+                app.config.save();
+            }
+        });
+
+        ui.add_space(12.0);
+
         // ── Instructions ──────────────────────────────────────────────────────
         egui::Frame::group(ui.style()).show(ui, |ui| {
+            ui.set_min_width(ui.available_width());
             ui.heading(app.t("Usage Instructions"));
             ui.add_space(4.0);
             for line in &[
