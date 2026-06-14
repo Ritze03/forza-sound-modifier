@@ -11,9 +11,12 @@ pub fn render(app: &mut App, ui: &mut egui::Ui) {
             ui.horizontal(|ui| {
                 ui.label("Forza Horizon 6 Directory:");
                 ui.add_space(4.0);
+                let btn_width = 70.0;
+                let spacing = ui.spacing().item_spacing.x;
+                let text_width = ui.available_width() - btn_width - spacing;
                 let resp = ui.add(
                     egui::TextEdit::singleline(&mut app.game_path_edit)
-                        .desired_width(f32::INFINITY)
+                        .desired_width(text_width)
                 );
                 if resp.lost_focus() && app.game_path_edit != app.config.data.game_path {
                     app.config.data.game_path = app.game_path_edit.clone();
@@ -21,7 +24,9 @@ pub fn render(app: &mut App, ui: &mut egui::Ui) {
                     app.refresh_scan();
                     app.load_misc_from_config();
                 }
-                if ui.button("Browse…").clicked() {
+                if ui.add(egui::Button::new("Browse…")
+                    .min_size(egui::vec2(btn_width, 0.0))).clicked()
+                {
                     if let Some(path) = rfd::FileDialog::new().pick_folder() {
                         app.game_path_edit = path.to_string_lossy().to_string();
                         app.config.data.game_path = app.game_path_edit.clone();
