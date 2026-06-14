@@ -11,7 +11,7 @@ pub fn render(app: &mut App, ui: &mut egui::Ui, _ctx: &egui::Context) {
         .resizable(true)
         .show_inside(ui, |ui| {
             ui.add_space(4.0);
-            let hint = app.t("Search cars…");
+            let hint = format!("{} {}", crate::app::icons::SEARCH, app.t("Search cars…"));
             ui.add(egui::TextEdit::singleline(&mut app.car_search)
                 .hint_text(hint)
                 .desired_width(f32::INFINITY));
@@ -37,7 +37,7 @@ pub fn render(app: &mut App, ui: &mut egui::Ui, _ctx: &egui::Context) {
                         let sel = app.selected_car.as_deref() == Some(&car_id);
                         let has_override = app.config.data.car_overrides.contains_key(&car_id);
                         let label = if has_override {
-                            egui::RichText::new(format!("● {}", car_id)).color(COL_GOLD)
+                            egui::RichText::new(format!("{} {}", crate::app::icons::CIRCLE, car_id)).color(COL_GOLD)
                         } else {
                             egui::RichText::new(&car_id)
                         };

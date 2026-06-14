@@ -140,6 +140,7 @@ pub struct App {
 impl App {
     pub fn new(cc: &eframe::CreationContext<'_>) -> Self {
         setup_visuals(&cc.egui_ctx);
+        setup_fonts(&cc.egui_ctx);
         let config = Config::new();
         let game_path_edit = config.data.game_path.clone();
 
@@ -520,7 +521,9 @@ impl eframe::App for App {
                     });
                 }
                 ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                    let btn = egui::Button::new(self.t("Apply Mod Profile"))
+                    let btn = egui::Button::new(
+                            egui::RichText::new(self.t("Apply Mod Profile")).color(Color32::WHITE).strong()
+                        )
                         .fill(Color32::from_rgb(34, 139, 34));
                     if ui.add(btn).clicked() {
                         if !self.backup_exists {
@@ -903,6 +906,24 @@ fn build_reverb_fields(config: &Config) -> Vec<ReverbField> {
     }).collect()
 }
 
+fn setup_fonts(ctx: &egui::Context) {
+    let mut fonts = egui::FontDefinitions::default();
+    fonts.font_data.insert(
+        "hack_nerd".to_owned(),
+        egui::FontData::from_static(
+            include_bytes!("../assets/HackNerdFont-Regular.ttf")
+        ),
+    );
+    // Append as fallback: egui uses its built-in font for normal text,
+    // and falls back to Hack Nerd Font for any glyph it doesn't have
+    // (this covers all Nerd Font PUA icon code points).
+    fonts.families.entry(egui::FontFamily::Proportional).or_default()
+        .push("hack_nerd".to_owned());
+    fonts.families.entry(egui::FontFamily::Monospace).or_default()
+        .push("hack_nerd".to_owned());
+    ctx.set_fonts(fonts);
+}
+
 fn setup_visuals(ctx: &egui::Context) {
     let mut v = egui::Visuals::dark();
     v.panel_fill           = Color32::from_rgb(30,  30,  36);
@@ -916,6 +937,18 @@ fn setup_visuals(ctx: &egui::Context) {
     v.widgets.open.bg_fill            = Color32::from_rgb(60,  60,  68);
     v.selection.bg_fill               = Color32::from_rgb(58,  58,  69);
     ctx.set_visuals(v);
+}
+
+// ── Nerd Font icon constants (HackNerdFont-Regular.ttf, Font Awesome subset) ──
+
+pub mod icons {
+    pub const FOLDER:  &str = "\u{F07B} "; //
+    pub const SYNC:    &str = "\u{F021} "; //
+    pub const UNDO:    &str = "\u{F0E2} "; //
+    pub const SEARCH:  &str = "\u{F002} "; //
+    pub const CHECK:   &str = "\u{F00C} "; //
+    pub const TIMES:   &str = "\u{F00D} "; //
+    pub const CIRCLE:  &str = "\u{F111} "; // ● (filled circle, for list bullets)
 }
 
 // ── Shared UI helpers used by multiple tabs ───────────────────────────────────

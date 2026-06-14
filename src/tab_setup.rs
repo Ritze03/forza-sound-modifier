@@ -34,19 +34,16 @@ pub fn render(app: &mut App, ui: &mut egui::Ui) {
         let w = ui.available_width();
         ui.set_max_width(w);
         ui.with_layout(egui::Layout::top_down_justified(egui::Align::LEFT), |ui| {
-            ui.add_space(16.0);
+            ui.add_space(6.0);
 
             if app.wizard_step.is_none() {
-                // Wrap in horizontal so the button stays its natural width
-                ui.horizontal(|ui| {
-                    if ui.add(
-                        egui::Button::new(app.t("Start Setup"))
-                            .fill(egui::Color32::from_rgb(30, 60, 100))
-                            .min_size(egui::vec2(140.0, 28.0)),
-                    ).clicked() {
-                        app.wizard_step = Some(0);
-                    }
-                });
+                if ui.add_sized(
+                    egui::vec2(200.0, 28.0),
+                    egui::Button::new(app.t("Quick Start Guide"))
+                        .fill(egui::Color32::from_rgb(30, 60, 100)),
+                ).clicked() {
+                    app.wizard_step = Some(0);
+                }
                 ui.add_space(12.0);
             }
 
@@ -70,7 +67,8 @@ pub fn render(app: &mut App, ui: &mut egui::Ui) {
                         app.refresh_scan();
                         app.load_misc_from_config();
                     }
-                    if ui.add(egui::Button::new(app.t("Browse…"))
+                    if ui.add(egui::Button::new(
+                            format!("{} {}", crate::app::icons::FOLDER, app.t("Browse…")))
                         .min_size(egui::vec2(btn_w, 0.0))).clicked()
                     {
                         if let Some(path) = rfd::FileDialog::new().pick_folder() {
@@ -92,9 +90,13 @@ pub fn render(app: &mut App, ui: &mut egui::Ui) {
             let r = section_frame(ui, hl).show(ui, |ui| {
                 ui.heading(app.t("Backup & Restore"));
                 ui.add_space(4.0);
-                let status_color = if app.backup_exists { crate::app::COL_GREEN } else { crate::app::COL_RED };
+                let (status_color, status_icon) = if app.backup_exists {
+                    (crate::app::COL_GREEN, crate::app::icons::CHECK)
+                } else {
+                    (crate::app::COL_RED, crate::app::icons::TIMES)
+                };
                 ui.colored_label(status_color,
-                    format!("{} {}", app.t("Backup Status:"), app.backup_status_msg));
+                    format!("{} {} {}", status_icon, app.t("Backup Status:"), app.backup_status_msg));
                 ui.add_space(6.0);
                 ui.label(egui::RichText::new(app.t(
                     "The tool reads from a safe Backup folder ('media/Audio_Backup') and applies \
@@ -103,7 +105,8 @@ pub fn render(app: &mut App, ui: &mut egui::Ui) {
                 )).color(crate::app::COL_GRAY).size(11.0));
                 ui.add_space(8.0);
                 ui.horizontal(|ui| {
-                    if ui.add(egui::Button::new(app.t("Create / Refresh Backup"))
+                    if ui.add(egui::Button::new(
+                            format!("{} {}", crate::app::icons::SYNC, app.t("Create / Refresh Backup")))
                         .fill(egui::Color32::from_rgb(40, 80, 40))).clicked()
                     {
                         let game_path = &app.config.data.game_path;
@@ -123,7 +126,8 @@ pub fn render(app: &mut App, ui: &mut egui::Ui) {
                         }
                     }
                     ui.add_enabled_ui(app.backup_exists, |ui| {
-                        if ui.add(egui::Button::new(app.t("Restore Original Stock Files"))
+                        if ui.add(egui::Button::new(
+                                format!("{} {}", crate::app::icons::UNDO, app.t("Restore Original Stock Files")))
                             .fill(egui::Color32::from_rgb(100, 30, 30))).clicked()
                         {
                             app.dialog = Some(Dialog::Confirm {

@@ -105,7 +105,7 @@ pub fn tr(lang: Language, key: &'static str) -> &'static str {
         "Backfire Minimum Delay (ms)"    => "Fehlzündung Min. Verzögerung (ms)",
         "Backfire Maximum Delay (ms)"    => "Fehlzündung Max. Verzögerung (ms)",
         // Setup wizard
-        "Start Setup" => "Einrichtung starten",
+        "Quick Start Guide" => "Schnellstartanleitung",
         "Back"        => "Zurück",
         "Next"        => "Weiter",
         "Finish"      => "Fertig",

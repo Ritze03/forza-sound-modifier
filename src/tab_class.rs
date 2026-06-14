@@ -12,7 +12,7 @@ pub fn render(app: &mut App, ui: &mut egui::Ui, _ctx: &egui::Context) {
         .resizable(true)
         .show_inside(ui, |ui| {
             ui.add_space(4.0);
-            let hint = i18n::tr(lang, "Search synthesizers…");
+            let hint = format!("{} {}", crate::app::icons::SEARCH, i18n::tr(lang, "Search synthesizers…"));
             let resp = ui.add(
                 egui::TextEdit::singleline(&mut app.synth_search)
                     .hint_text(hint)
@@ -30,7 +30,7 @@ pub fn render(app: &mut App, ui: &mut egui::Ui, _ctx: &egui::Context) {
                         let has_ov = app.config.data.synth_overrides.contains_key(*cat);
                         let display = i18n::tr_dyn(lang, *cat);
                         let label = if has_ov {
-                            egui::RichText::new(format!("● {}", display)).color(COL_GOLD)
+                            egui::RichText::new(format!("{} {}", crate::app::icons::CIRCLE, display)).color(COL_GOLD)
                         } else {
                             egui::RichText::new(display).color(COL_BLUE_HINT)
                         };
@@ -52,7 +52,7 @@ pub fn render(app: &mut App, ui: &mut egui::Ui, _ctx: &egui::Context) {
                         let sel = app.selected_synth.as_deref() == Some(&fname);
                         let has_ov = app.config.data.synth_overrides.contains_key(&fname);
                         let label = if has_ov {
-                            egui::RichText::new(format!("● {}", fname)).color(COL_GOLD)
+                            egui::RichText::new(format!("{} {}", crate::app::icons::CIRCLE, fname)).color(COL_GOLD)
                         } else {
                             egui::RichText::new(&fname)
                         };
